@@ -1,0 +1,44 @@
+name: Security
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  nodejs-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check Nodejs Security
+        run: npm audit --omit=dev --audit-level=high
+
+  composer-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+
+      - name: composer install
+        uses: php-actions/composer@v6
+        with:
+          php_version: "8.4"
+          version: 2
+          command: install --prefer-dist --no-progress
+
+      - name: Check Composer Security
+        run: composer audit

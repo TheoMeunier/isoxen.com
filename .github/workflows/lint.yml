@@ -1,0 +1,84 @@
+name: Linter
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  pint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+
+      - name: composer install
+        uses: php-actions/composer@v6
+        with:
+          php_version: "8.4"
+          version: 2
+          command: install --prefer-dist --no-progress
+
+      - name: Check Pint
+        run: ./vendor/bin/pint --test
+
+  rector:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+
+      - name: composer install
+        uses: php-actions/composer@v6
+        with:
+          php_version: "8.4"
+          version: 2
+          command: install --prefer-dist --no-progress
+
+      - name: Check Rector
+        run: ./vendor/bin/rector --dry-run
+
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+
+      - name: composer install
+        uses: php-actions/composer@v6
+        with:
+          php_version: "8.4"
+          version: 2
+          command: install --prefer-dist --no-progress
+
+      - name: Check PHPStan
+        run: ./vendor/bin/phpstan analyse
+
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check Prettier
+        run: npx prettier --check .
