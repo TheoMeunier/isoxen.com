@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\User;
+use App\Auth\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);

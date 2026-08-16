@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers;
+namespace App\Core\Providers;
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;

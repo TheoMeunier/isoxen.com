@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Concerns;
+namespace App\Auth\Concerns;
 
-use App\Models\User;
+use App\Auth\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 
@@ -11,7 +11,7 @@ trait ProfileValidationRules
     /**
      * Get the validation rules used to validate user profiles.
      *
-     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     * @return ValidationRule
      */
     protected function profileRules(?int $userId = null): array
     {
