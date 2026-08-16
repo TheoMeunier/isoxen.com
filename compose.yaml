@@ -1,0 +1,62 @@
+services:
+    # App Service
+    app:
+        build:
+            context: .
+            dockerfile: docker/dev/Dockerfile
+        container_name: ${APP_SLUG}_app
+        restart: unless-stopped
+        ports:
+            - "8080:80"
+            - "5173:5173"
+        working_dir: /app
+        volumes:
+            - ./:/app
+            - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+        environment:
+            OCTANE_SERVER: frankenphp
+        networks:
+            - app_network
+
+    # Postgres Service
+    database:
+        image: postgres:18-alpine
+        container_name: ${APP_SLUG}_database
+        restart: unless-stopped
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_DB: ${DB_DATABASE}
+            POSTGRES_USER: ${DB_USERNAME}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+        volumes:
+            - ./storage-db:/var/lib/postgresql
+        networks:
+            - app_network
+
+    # Redis service
+    redis:
+        image: redis:latest
+        container_name: ${APP_SLUG}_redis
+        restart: unless-stopped
+        command: redis-server --requirepass ${REDIS_PASSWORD}
+        env_file:
+            - .env
+        networks:
+            - app_network
+
+    # Mailpit
+    mailpit:
+        image: axllent/mailpit:v1.25
+        restart: unless-stopped
+        container_name: ${APP_SLUG}_mailpit
+        ports:
+            - '1025:1025'
+            - '8025:8025'
+        networks:
+            - app_network
+
+# Docker Networks
+networks:
+    app_network:
+        driver: bridge
