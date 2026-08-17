@@ -1,7 +1,7 @@
-import { AppContent } from '@/components/app-content';
-import { AppShell } from '@/components/app-shell';
-import { AppSidebar } from '@/components/app-sidebar';
-import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { AppContent } from '@/components/molecules/app-content';
+import { AppShell } from '@/components/organisms/app/app-shell';
+import { AppSidebar } from '@/components/organisms/sidebar/app-sidebar';
+import { AppSidebarHeader } from '@/components/organisms/sidebar/app-sidebar-header';
 import type { AppLayoutProps } from '@/types';
 
 export default function AppSidebarLayout({

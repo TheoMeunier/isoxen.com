@@ -2,12 +2,12 @@ import { Form, Head } from '@inertiajs/react';
 import { useRef } from 'react';
 import SecurityController from '@/actions/App/Auth/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
-import type { Props as ManageTwoFactorProps } from '@/components/manage-two-factor';
-import ManageTwoFactor from '@/components/manage-two-factor';
-import PasswordInput from '@/components/password-input';
+import InputError from '@/components/molecules/forms/input-error';
+import PasswordInput from '@/components/molecules/forms/password-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import ManageTwoFactor from '@/features/auth/components/manage-two-factor';
+import type { Props as ManageTwoFactorProps } from '@/features/auth/components/manage-two-factor';
 import { edit } from '@/routes/security';
 
 type Props = {
