@@ -29,4 +29,4 @@ USER app
 
 EXPOSE 80
 
-CMD ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=80", "--workers=auto", "--max-requests=250"]
+CMD ["frankenphp", "php-server", "--root", "/app/public", "--listen", ":80"]
