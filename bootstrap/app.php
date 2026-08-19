@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Core\Middleware\HandleAppearance;
 use App\Core\Middleware\HandleInertiaRequests;
+use App\Watch\Ingestion\Middleware\AuthenticateIngestionToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        $middleware->alias([
+            'otel.auth' => AuthenticateIngestionToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

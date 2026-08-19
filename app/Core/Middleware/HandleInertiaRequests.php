@@ -2,6 +2,8 @@
 
 namespace App\Core\Middleware;
 
+use App\Watch\Ingestion\Queries\SpanTypeCountsQuery;
+use App\Watch\Projects\Models\Project;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,6 +44,39 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            ...$this->projectContext($request),
+        ];
+    }
+
+    /**
+     * Share the project currently being viewed so the app sidebar can swap
+     * its navigation for that project's observability categories.
+     *
+     * Only resolved on routes bound to a project, and only for a user
+     * allowed to view it, so this costs one extra count query on project
+     * pages and nothing anywhere else.
+     *
+     * @return array<string, mixed>
+     */
+    private function projectContext(Request $request): array
+    {
+        $project = $request->route('project');
+
+        if (! $project instanceof Project) {
+            return [];
+        }
+
+        if ($request->user()?->cannot('view', $project) !== false) {
+            return [];
+        }
+
+        return [
+            'currentProject' => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'slug' => $project->slug,
+            ],
+            'categoryCounts' => app(SpanTypeCountsQuery::class)->execute($project),
         ];
     }
 }
