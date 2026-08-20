@@ -6,6 +6,7 @@ namespace App\Watch\Ingestion\Parsing;
 
 use App\Watch\Ingestion\Support\OtlpAttributes;
 use App\Watch\Ingestion\Support\OtlpTimestamp;
+use App\Watch\Ingestion\Support\OtlpValue;
 use Illuminate\Support\Carbon;
 
 /**
@@ -41,9 +42,9 @@ final class OtlpSpansParser
 
                     $rows[] = [
                         'project_id' => $projectId,
-                        'trace_id' => $span['traceId'] ?? null,
-                        'span_id' => $span['spanId'] ?? null,
-                        'parent_span_id' => $span['parentSpanId'] ?? null,
+                        'trace_id' => OtlpValue::id($span['traceId'] ?? null, 16),
+                        'span_id' => OtlpValue::id($span['spanId'] ?? null, 8),
+                        'parent_span_id' => OtlpValue::id($span['parentSpanId'] ?? null, 8),
                         'name' => $span['name'] ?? null,
                         // Not a standard OTLP field: populated from the
                         // `isoxen.type` attribute set by isoxen's own
@@ -52,11 +53,11 @@ final class OtlpSpansParser
                         // Spans from a generic OTEL SDK won't set this and
                         // are stored as uncategorized (null).
                         'type' => $attributes['isoxen.type'] ?? null,
-                        'kind' => $span['kind'] ?? null,
+                        'kind' => OtlpValue::spanKind($span['kind'] ?? null),
                         'time' => $startTime,
                         'end_time' => OtlpTimestamp::toCarbon($span['endTimeUnixNano'] ?? null),
                         'duration_nanos' => self::durationNanos($span),
-                        'status_code' => $span['status']['code'] ?? null,
+                        'status_code' => OtlpValue::statusCode($span['status']['code'] ?? null),
                         'status_message' => $span['status']['message'] ?? null,
                         'resource_attributes' => json_encode($resourceAttributes),
                         'attributes' => json_encode($attributes),

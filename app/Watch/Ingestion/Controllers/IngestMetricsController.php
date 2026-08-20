@@ -17,7 +17,11 @@ class IngestMetricsController extends IngestOtlpController
     {
         $payload = $this->decode($request, 'resourceMetrics');
 
-        StoreOtlpMetrics::dispatch($this->project($request)->id, $payload);
+        // An empty export is acknowledged without queueing a job that would
+        // parse nothing and insert nothing.
+        if (! $this->isEmpty($payload, 'resourceMetrics')) {
+            StoreOtlpMetrics::dispatch($this->project($request)->id, $payload);
+        }
 
         return response()->json([]);
     }

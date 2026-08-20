@@ -19,9 +19,17 @@ use Illuminate\Http\Request;
 abstract class IngestOtlpController extends Controller
 {
     /**
-     * Decode the request body as an OTLP/JSON payload, aborting with a
-     * clear error when the request isn't JSON or is missing the expected
-     * top-level key.
+     * Decode the request body as an OTLP/JSON payload.
+     *
+     * An export carrying no data is *valid* OTLP and must be accepted, not
+     * rejected. This matters more than it sounds: protobuf's JSON mapping
+     * omits empty repeated fields entirely, so an exporter with nothing to
+     * report sends `{}` — no `resourceSpans` key at all. Treating that as a
+     * 400 makes the sender retry, give up, and log an error for what is
+     * simply a quiet minute, which reads as a broken pipeline.
+     *
+     * A body that isn't JSON, or whose root key holds something other than
+     * a list, is still rejected — that's a real client error.
      *
      * @return array<string, mixed>
      */
@@ -33,11 +41,25 @@ abstract class IngestOtlpController extends Controller
 
         $payload = $request->json()->all();
 
-        if (! is_array($payload[$rootKey] ?? null)) {
-            abort(400, "Missing or invalid \"{$rootKey}\" in payload.");
+        if (! array_key_exists($rootKey, $payload)) {
+            return [$rootKey => []];
+        }
+
+        if (! is_array($payload[$rootKey])) {
+            abort(400, "Invalid \"{$rootKey}\" in payload: expected a list, got ".get_debug_type($payload[$rootKey]).'.');
         }
 
         return $payload;
+    }
+
+    /**
+     * Whether this export actually carries anything worth queueing.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function isEmpty(array $payload, string $rootKey): bool
+    {
+        return ($payload[$rootKey] ?? []) === [];
     }
 
     protected function project(Request $request): Project

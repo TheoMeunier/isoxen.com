@@ -10,4 +10,6 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/projects.php';
-require __DIR__.'/otel.php';
+
+// routes/otel.php is deliberately not required here: it's registered in
+// bootstrap/app.php so it lands in the stateless `api` middleware group.

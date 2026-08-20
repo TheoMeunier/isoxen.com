@@ -1,0 +1,147 @@
+<?php
+
+namespace Isoxen\Client\Instrumentation;
+
+use Illuminate\Redis\Events\CommandExecuted;
+use Illuminate\Redis\RedisManager;
+use Illuminate\Support\Str;
+use Isoxen\Client\Facades\Meter;
+use Isoxen\Client\Facades\Tracer;
+use Isoxen\Client\Instrumentation\Support\InstrumentationUtilities;
+use Isoxen\Client\SpanType;
+use OpenTelemetry\API\Common\Time\Clock;
+use OpenTelemetry\API\Common\Time\ClockInterface;
+use OpenTelemetry\API\Trace\SpanKind;
+use OpenTelemetry\SemConv\Attributes\DbAttributes;
+use OpenTelemetry\SemConv\Attributes\ServerAttributes;
+use OpenTelemetry\SemConv\Metrics\DbMetrics;
+use Predis\Client;
+use Predis\Connection\NodeConnectionInterface;
+
+class RedisInstrumentation implements Instrumentation
+{
+    use InstrumentationUtilities;
+    use SpanTimeAdapter;
+
+    public function register(array $options): void
+    {
+        app('events')->listen(CommandExecuted::class, [$this, 'recordCommand']);
+
+        $this->callAfterResolving('redis', $this->registerRedisEvents(...));
+    }
+
+    public function recordCommand(CommandExecuted $event): void
+    {
+        if (! Tracer::traceStarted()) {
+            return;
+        }
+
+        $operationName = strtoupper($event->command);
+
+        $sharedAttributes = $this->sharedTraceMetricAttributes($event, $operationName);
+        $this->recordTraceSpan($event, $operationName, $sharedAttributes);
+        $this->recordOperationDurationMetric($event, $sharedAttributes);
+    }
+
+    /**
+     * @param  array<non-empty-string, bool|int|float|string|array|null>  $attributes
+     */
+    protected function recordTraceSpan(CommandExecuted $event, string $operationName, array $attributes): void
+    {
+        $span = Tracer::newSpan($operationName)
+            ->setSpanKind(SpanKind::KIND_CLIENT)
+            ->setAttribute(SpanType::ATTRIBUTE, SpanType::Redis->value)
+            ->setStartTimestamp($this->getEventStartTimestampNs($event->time))
+            ->start();
+
+        $span->setAttributes($attributes);
+
+        $span->end();
+    }
+
+    /**
+     * @param  array<non-empty-string, bool|int|float|string|array|null>  $attributes
+     */
+    protected function recordOperationDurationMetric(CommandExecuted $event, array $attributes): void
+    {
+        $duration = (Clock::getDefault()->now() - $this->getEventStartTimestampNs($event->time)) / ClockInterface::NANOS_PER_SECOND;
+
+        Meter::histogram(
+            name: DbMetrics::DB_CLIENT_OPERATION_DURATION,
+            unit: 's',
+            description: 'Duration of database client operations.',
+            advisory: [
+                'ExplicitBucketBoundaries' => [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0],
+            ])
+            ->record($duration, $attributes);
+    }
+
+    /**
+     * @return array<non-empty-string, bool|int|float|string|array|null>
+     */
+    protected function sharedTraceMetricAttributes(CommandExecuted $event, string $operationName): array
+    {
+        return [
+            DbAttributes::DB_SYSTEM_NAME => 'redis',
+            DbAttributes::DB_OPERATION_NAME => $operationName,
+            DbAttributes::DB_NAMESPACE => $this->resolveDbIndex($event->connectionName),
+            DbAttributes::DB_QUERY_TEXT => Str::limit($this->formatCommand($event->command, $event->parameters), 500),
+            ServerAttributes::SERVER_ADDRESS => $this->resolveRedisAddress($event->connection->client()),
+        ];
+    }
+
+    protected function resolveRedisAddress(mixed $client): ?string
+    {
+        if ($client instanceof \Redis) {
+            return $client->getHost() ?: null;
+        }
+
+        if ($client instanceof Client) {
+            $connection = $client->getConnection();
+
+            return $connection instanceof NodeConnectionInterface
+                ? ($connection->getParameters()->host ?? null)
+                : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Format the given Redis command.
+     */
+    protected function formatCommand(string $command, array $parameters): string
+    {
+        $parameters = collect($parameters)->map(function ($parameter) {
+            if (is_array($parameter)) {
+                return collect($parameter)->map(function ($value, $key) {
+                    if (is_array($value)) {
+                        return \Safe\json_encode($value);
+                    }
+
+                    return is_int($key) ? $value : sprintf('%s %s', $key, $value);
+                })->implode(' ');
+            }
+
+            return $parameter;
+        })->implode(' ');
+
+        return sprintf('%s %s', $command, $parameters);
+    }
+
+    protected function resolveDbIndex(string $connectionName): ?string
+    {
+        return config(sprintf('database.redis.%s.database', $connectionName));
+    }
+
+    protected function registerRedisEvents(mixed $redis): void
+    {
+        if ($redis instanceof RedisManager) {
+            foreach ((array) $redis->connections() as $connection) {
+                $connection->setEventDispatcher(app('events'));
+            }
+
+            $redis->enableEvents();
+        }
+    }
+}

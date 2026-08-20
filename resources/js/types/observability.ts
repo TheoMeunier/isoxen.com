@@ -36,6 +36,31 @@ export type LogEntry = {
 };
 
 /**
+ * The headline numbers above a category's table. `errors` is null for
+ * categories where the notion doesn't apply (metrics), and `slowest_ms`
+ * only exists for spans, which are the only entries with a duration.
+ */
+export type CategorySummary = {
+    total: number;
+    errors: number | null;
+    slowest_ms: number | null;
+    /** The window these figures cover, matching the chart beside them. */
+    hours: number;
+};
+
+/**
+ * One hour of the activity chart.
+ *
+ * `at` is an ISO-8601 instant, deliberately not a preformatted label: the
+ * hour a reader should see is the hour in *their* timezone, which only the
+ * browser knows.
+ */
+export type TimelinePoint = {
+    at: string;
+    count: number;
+};
+
+/**
  * The project currently being viewed, shared from
  * `HandleInertiaRequests::projectContext()` so the app sidebar can swap its
  * navigation. Absent on every page that isn't scoped to a project.

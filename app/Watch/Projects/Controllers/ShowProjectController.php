@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Watch\Projects\Controllers;
 
 use App\Core\Controllers\Controller;
+use App\Watch\Ingestion\Queries\ActivityTimelineQuery;
+use App\Watch\Ingestion\Queries\CategorySummaryQuery;
 use App\Watch\Ingestion\Queries\RecentLogsQuery;
 use App\Watch\Ingestion\Queries\RecentMetricsQuery;
 use App\Watch\Ingestion\Queries\RecentSpansQuery;
@@ -21,6 +23,8 @@ class ShowProjectController extends Controller
         private readonly RecentSpansQuery $recentSpansQuery,
         private readonly RecentMetricsQuery $recentMetricsQuery,
         private readonly RecentLogsQuery $recentLogsQuery,
+        private readonly ActivityTimelineQuery $activityTimelineQuery,
+        private readonly CategorySummaryQuery $categorySummaryQuery,
     ) {}
 
     /**
@@ -45,6 +49,8 @@ class ShowProjectController extends Controller
             default => $this->recentSpansQuery->execute($project, $category['type']),
         };
 
+        $table = ObservabilityCategories::table($categorySlug);
+
         // `currentProject` and `categoryCounts` power the app sidebar and
         // are shared for every project-bound route by
         // HandleInertiaRequests, so they aren't repeated here.
@@ -52,6 +58,8 @@ class ShowProjectController extends Controller
             'project' => new ProjectResource($project),
             'activeCategory' => $categorySlug,
             'entries' => $entries,
+            'summary' => $this->categorySummaryQuery->execute($project, $table, $category['type']),
+            'timeline' => $this->activityTimelineQuery->execute($project, $table, $category['type']),
         ]);
     }
 }

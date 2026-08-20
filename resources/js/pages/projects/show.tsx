@@ -6,7 +6,9 @@ import EditProjectController from '@/actions/App/Watch/Projects/Controllers/Edit
 import Heading from '@/components/heading';
 import ConfirmDialog from '@/components/molecules/confirm-dialog';
 import InputError from '@/components/molecules/forms/input-error';
+import { ActivityChart } from '@/components/molecules/activity-chart';
 import { PagerLinks } from '@/components/molecules/pager-links';
+import { StatTiles } from '@/components/molecules/stat-tiles';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -21,11 +23,13 @@ import { Label } from '@/components/ui/label';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { index } from '@/routes/projects';
 import type {
+    CategorySummary,
     LogEntry,
     MetricEntry,
     ObservabilityCategory,
     Paginated,
     SpanEntry,
+    TimelinePoint,
 } from '@/types/observability';
 import type { Project } from '@/types/project';
 
@@ -88,6 +92,32 @@ function formatDuration(nanos: number | null): string {
     return `${(nanos / 1_000_000).toFixed(1)} ms`;
 }
 
+/**
+ * Status is a reserved colour role, and it always ships with its label —
+ * never colour alone, which would be invisible to a colourblind reader.
+ */
+function StatusBadge({ code }: { code: number | null }) {
+    if (code === null) {
+        return <span className="text-muted-foreground">—</span>;
+    }
+
+    const label = STATUS_CODES[code] ?? String(code);
+
+    if (code !== 2) {
+        return <span className="text-muted-foreground">{label}</span>;
+    }
+
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#c33c3c]/10 px-2 py-0.5 font-medium text-[#c33c3c] dark:bg-[#e66767]/15 dark:text-[#e66767]">
+            <span
+                aria-hidden
+                className="size-1.5 rounded-full bg-current"
+            />
+            {label}
+        </span>
+    );
+}
+
 function EmptyState({ message }: { message: string }) {
     return (
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sidebar-border/70 py-16 text-center dark:border-sidebar-border">
@@ -130,10 +160,7 @@ function SpansTable({ entries }: { entries: SpanEntry[] }) {
                             {formatDuration(entry.duration_nanos)}
                         </td>
                         <td className="py-2">
-                            {entry.status_code !== null
-                                ? (STATUS_CODES[entry.status_code] ??
-                                  entry.status_code)
-                                : '—'}
+                            <StatusBadge code={entry.status_code} />
                         </td>
                     </tr>
                 ))}
@@ -214,10 +241,14 @@ export default function ProjectsShow({
     project,
     activeCategory,
     entries,
+    summary,
+    timeline,
 }: {
     project: Project;
     activeCategory: ObservabilityCategory;
     entries: Entries;
+    summary: CategorySummary;
+    timeline: TimelinePoint[];
 }) {
     const [copiedText, copy] = useClipboard();
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -315,6 +346,17 @@ export default function ProjectsShow({
                         </div>
                     )}
                 </div>
+
+                {summary.total > 0 && (
+                    <>
+                        <StatTiles
+                            summary={summary}
+                            unit={CATEGORY_LABELS[activeCategory].toLowerCase()}
+                        />
+
+                        <ActivityChart points={timeline} />
+                    </>
+                )}
 
                 <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                     <div className="border-b border-sidebar-border/70 px-4 py-3 dark:border-sidebar-border">

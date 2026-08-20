@@ -6,6 +6,7 @@ namespace App\Watch\Ingestion\Parsing;
 
 use App\Watch\Ingestion\Support\OtlpAttributes;
 use App\Watch\Ingestion\Support\OtlpTimestamp;
+use App\Watch\Ingestion\Support\OtlpValue;
 use Illuminate\Support\Carbon;
 
 /**
@@ -38,9 +39,9 @@ final class OtlpLogsParser
 
                     $rows[] = [
                         'project_id' => $projectId,
-                        'trace_id' => $logRecord['traceId'] ?? null,
-                        'span_id' => $logRecord['spanId'] ?? null,
-                        'severity_number' => $logRecord['severityNumber'] ?? null,
+                        'trace_id' => OtlpValue::id($logRecord['traceId'] ?? null, 16),
+                        'span_id' => OtlpValue::id($logRecord['spanId'] ?? null, 8),
+                        'severity_number' => OtlpValue::severityNumber($logRecord['severityNumber'] ?? null),
                         'severity_text' => $logRecord['severityText'] ?? null,
                         'body' => self::body($logRecord['body'] ?? null),
                         'time' => $time,

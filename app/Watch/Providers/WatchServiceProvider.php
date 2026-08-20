@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Watch\Providers;
 
+use App\Watch\Ingestion\Console\IngestionStatusCommand;
 use App\Watch\Projects\Models\Project;
 use App\Watch\Projects\Policies\ProjectPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -25,5 +26,9 @@ class WatchServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Project::class, ProjectPolicy::class);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([IngestionStatusCommand::class]);
+        }
     }
 }

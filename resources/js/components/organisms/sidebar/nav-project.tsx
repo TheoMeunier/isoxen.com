@@ -38,10 +38,16 @@ type CategoryDef = {
      */
     type?: string;
     /**
-     * Whether this category is wired to real data yet. The ones left
-     * disabled need instrumentation isoxen's client doesn't implement yet
-     * (Artisan commands, the scheduler, mail, notifications, cache, users).
+     * Whether this category is wired to real data yet.
+     *
+     * All of them now are: the client grew instrumentation for commands,
+     * the scheduler, mail, notifications, cache and users. The flag stays
+     * because new categories land here disabled before their sensor ships.
      * Mirrors `App\Watch\Ingestion\Support\ObservabilityCategories::all()`.
+     *
+     * Note that an enabled category can still be legitimately empty — Cache
+     * is off by default in the client (ISOXEN_SENSOR_CACHE), because a
+     * cache-heavy request emits hundreds of spans.
      */
     enabled: boolean;
 };
@@ -49,19 +55,19 @@ type CategoryDef = {
 const ACTIVITY: CategoryDef[] = [
     { slug: 'requests', label: 'Requests', icon: Globe, type: 'request', enabled: true },
     { slug: 'jobs', label: 'Jobs', icon: BriefcaseBusiness, type: 'job', enabled: true },
-    { slug: 'commands', label: 'Commands', icon: Braces, type: 'command', enabled: false },
-    { slug: 'scheduled-tasks', label: 'Scheduled Tasks', icon: CalendarClock, type: 'scheduled_task', enabled: false },
+    { slug: 'commands', label: 'Commands', icon: Braces, type: 'command', enabled: true },
+    { slug: 'scheduled-tasks', label: 'Scheduled Tasks', icon: CalendarClock, type: 'scheduled_task', enabled: true },
     { slug: 'exceptions', label: 'Exceptions', icon: TriangleAlert, type: 'exception', enabled: true },
     { slug: 'queries', label: 'Queries', icon: Database, type: 'query', enabled: true },
-    { slug: 'notifications', label: 'Notifications', icon: Bell, type: 'notification', enabled: false },
-    { slug: 'mail', label: 'Mail', icon: Mail, type: 'mail', enabled: false },
-    { slug: 'cache', label: 'Cache', icon: Zap, type: 'cache', enabled: false },
+    { slug: 'notifications', label: 'Notifications', icon: Bell, type: 'notification', enabled: true },
+    { slug: 'mail', label: 'Mail', icon: Mail, type: 'mail', enabled: true },
+    { slug: 'cache', label: 'Cache', icon: Zap, type: 'cache', enabled: true },
     { slug: 'outgoing-requests', label: 'Outgoing Requests', icon: ArrowUpRight, type: 'outgoing_request', enabled: true },
     { slug: 'metrics', label: 'Metrics', icon: BarChart3, enabled: true },
 ];
 
 const MONITORING: CategoryDef[] = [
-    { slug: 'users', label: 'Users', icon: Users, type: 'user', enabled: false },
+    { slug: 'users', label: 'Users', icon: Users, type: 'user', enabled: true },
     { slug: 'logs', label: 'Logs', icon: ScrollText, enabled: true },
 ];
 

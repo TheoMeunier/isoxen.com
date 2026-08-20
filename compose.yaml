@@ -13,8 +13,42 @@ services:
         volumes:
             - ./:/app
             - ./docker/dev/local.ini:/usr/local/etc/php/conf.d/local.ini
+        # The OpenTelemetry SDK configures itself from real environment
+        # variables when composer's autoloader runs, which happens before
+        # Laravel has read .env. Without this, OTEL_* values set in .env are
+        # invisible to it and no telemetry is ever exported.
+        env_file:
+            - .env
         environment:
             OCTANE_SERVER: frankenphp
+        networks:
+            - app_network
+
+    # Queue worker
+    #
+    # Not optional, and not only for background work: since the telemetry
+    # client ships through the queue, nothing at all is written to the
+    # otel_* tables unless this is running. Forgetting it looks exactly
+    # like a broken pipeline -- payloads pile up on the queue in silence.
+    #
+    # Both queues are covered: `telemetry` carries the OTLP payloads sent by
+    # the client, `default` carries the jobs that write them to the database.
+    worker:
+        build:
+            context: .
+            dockerfile: docker/dev/Dockerfile
+        container_name: ${APP_SLUG}_worker
+        restart: unless-stopped
+        working_dir: /app
+        command: php artisan queue:work --queue=telemetry,default
+        volumes:
+            - ./:/app
+            - ./docker/dev/local.ini:/usr/local/etc/php/conf.d/local.ini
+        env_file:
+            - .env
+        depends_on:
+            - database
+            - redis
         networks:
             - app_network
 
@@ -41,7 +75,7 @@ services:
         restart: unless-stopped
         command: redis-server --requirepass ${REDIS_PASSWORD}
         ports:
-            -   "6379:6379"
+            - "6379:6379"
         env_file:
             - .env
         networks:
