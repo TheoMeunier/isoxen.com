@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 class CategorySummaryQuery
 {
     /**
-     * @return array{total: int, errors: int|null, slowest_ms: float|null, hours: int}
+     * @return array{total: int, errors: int|null, slowest_ms: float|null, avg_ms: float|null, hours: int}
      */
     public function execute(Project $project, string $table, ?string $type = null, int $hours = 24): array
     {
@@ -29,10 +29,13 @@ class CategorySummaryQuery
         $total = $this->base($project, $table, $type, $since)->count();
 
         return [
-            'total' => $total,
-            'errors' => $this->errors($project, $table, $type, $since),
+            'total'      => $total,
+            'errors'     => $this->errors($project, $table, $type, $since),
             'slowest_ms' => $table === 'otel_spans'
                 ? $this->p95Milliseconds($project, $type, $since, $total)
+                : null,
+            'avg_ms' => $table === 'otel_spans'
+                ? $this->avgMilliseconds($project, $type, $since)
                 : null,
             'hours' => $hours,
         ];
@@ -45,7 +48,7 @@ class CategorySummaryQuery
             'otel_spans' => $this->base($project, $table, $type, $since)->where('status_code', 2)->count(),
             // OTEL severity number 17 is where ERROR begins.
             'otel_logs' => $this->base($project, $table, $type, $since)->where('severity_number', '>=', 17)->count(),
-            default => null,
+            default     => null,
         };
     }
 
@@ -75,6 +78,19 @@ class CategorySummaryQuery
             ->value('duration_nanos');
 
         return $nanos === null ? null : round((int) $nanos / 1_000_000, 1);
+    }
+
+    /**
+     * The average duration, in milliseconds -- the Duration panel's
+     * headline figure, alongside the p95 above.
+     */
+    private function avgMilliseconds(Project $project, ?string $type, Carbon $since): ?float
+    {
+        $avgNanos = $this->base($project, 'otel_spans', $type, $since)
+            ->whereNotNull('duration_nanos')
+            ->avg('duration_nanos');
+
+        return $avgNanos === null ? null : round((float) $avgNanos / 1_000_000, 1);
     }
 
     private function base(Project $project, string $table, ?string $type, Carbon $since): Builder

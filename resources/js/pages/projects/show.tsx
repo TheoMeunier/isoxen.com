@@ -1,16 +1,16 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { Check, Copy, Pencil } from 'lucide-react';
+import { Check, Copy, Pencil, Search } from 'lucide-react';
 import { useState } from 'react';
 import DeleteProjectController from '@/actions/App/Watch/Projects/Controllers/DeleteProjectController';
 import EditProjectController from '@/actions/App/Watch/Projects/Controllers/EditProjectController';
 import Heading from '@/components/heading';
-import { ActivityChart } from '@/components/molecules/activity-chart';
+import { CategoryHeader } from '@/components/molecules/category-header';
 import ConfirmDialog from '@/components/molecules/confirm-dialog';
 import InputError from '@/components/molecules/forms/input-error';
 import { PagerLinks } from '@/components/molecules/pager-links';
-import { StatTiles } from '@/components/molecules/stat-tiles';
 import { StatusBadge } from '@/components/molecules/status-badge';
 import { SlowEndpointsTable } from '@/components/organisms/slow-endpoints-table';
+import { StatChartPanel } from '@/components/organisms/stat-chart-panel';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -27,12 +27,15 @@ import { index } from '@/routes/projects';
 import { show as showTrace } from '@/routes/projects/traces';
 import type {
     CategorySummary,
+    DurationPoint,
     EndpointStat,
     LogEntry,
     MetricEntry,
     ObservabilityCategory,
     Paginated,
     SpanEntry,
+    StatusSegment,
+    StatusTimelinePoint,
     TimelinePoint,
 } from '@/types/observability';
 import type { Project } from '@/types/project';
@@ -231,6 +234,9 @@ export default function ProjectsShow({
     entries,
     summary,
     timeline,
+    durationTimeline,
+    statusBreakdown,
+    statusTimeline,
     slowEndpoints,
 }: {
     project: Project;
@@ -238,10 +244,32 @@ export default function ProjectsShow({
     entries: Entries;
     summary: CategorySummary;
     timeline: TimelinePoint[];
+    durationTimeline: DurationPoint[];
+    statusBreakdown: StatusSegment[];
+    statusTimeline: StatusTimelinePoint[];
     slowEndpoints: EndpointStat[];
 }) {
     const [copiedText, copy] = useClipboard();
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [search, setSearch] = useState('');
+
+    // Filters the page of entries already loaded -- not a server-side
+    // search across every entry the category has ever received. Good
+    // enough to scan what's on screen; a real search needs a backend query,
+    // which is a separate piece of work from this layout pass.
+    const searchedEntries = entries.data.filter((entry) => {
+        if (!search.trim()) {
+            return true;
+        }
+
+        const haystack =
+            'body' in entry ? (entry.body ?? '') : (entry.name ?? '');
+
+        return haystack.toLowerCase().includes(search.trim().toLowerCase());
+    });
+
+    const hasDuration =
+        activeCategory !== LOGS_CATEGORY && activeCategory !== METRICS_CATEGORY;
 
     return (
         <>
@@ -335,26 +363,103 @@ export default function ProjectsShow({
                     )}
                 </div>
 
-                {summary.total > 0 && (
-                    <>
-                        <StatTiles
-                            summary={summary}
-                            unit={CATEGORY_LABELS[activeCategory].toLowerCase()}
-                        />
+                <CategoryHeader label={CATEGORY_LABELS[activeCategory]} />
 
-                        <ActivityChart points={timeline} />
-                    </>
-                )}
+                <div className="flex flex-col gap-4 lg:flex-row">
+                    <StatChartPanel
+                        title={CATEGORY_LABELS[activeCategory].toUpperCase()}
+                        headline={summary.total.toLocaleString()}
+                        pills={statusBreakdown.map((segment) => ({
+                            label: segment.label,
+                            value: segment.value.toLocaleString(),
+                            tone: segment.tone,
+                        }))}
+                        points={
+                            // Metrics has no status breakdown to colour bars
+                            // by (see ShowProjectController), so it falls
+                            // back to a single neutral segment per hour --
+                            // still a bar chart, just uncoloured.
+                            statusTimeline.length > 0
+                                ? statusTimeline
+                                : timeline.map((point) => ({
+                                      at: point.at,
+                                      segments: [
+                                          {
+                                              label: CATEGORY_LABELS[
+                                                  activeCategory
+                                              ],
+                                              value: point.count,
+                                              tone: 'neutral' as const,
+                                          },
+                                      ],
+                                  }))
+                        }
+                    />
+
+                    {hasDuration && (
+                        <StatChartPanel
+                            title="Duration"
+                            headline={
+                                summary.avg_ms !== null
+                                    ? `${summary.avg_ms} ms`
+                                    : '—'
+                            }
+                            pills={[
+                                {
+                                    label: 'Avg',
+                                    value:
+                                        summary.avg_ms !== null
+                                            ? `${summary.avg_ms} ms`
+                                            : '—',
+                                    tone: 'neutral',
+                                },
+                                {
+                                    label: 'P95',
+                                    value:
+                                        summary.slowest_ms !== null
+                                            ? `${summary.slowest_ms} ms`
+                                            : '—',
+                                    tone: 'warning',
+                                },
+                            ]}
+                            points={durationTimeline.map((point) => ({
+                                at: point.at,
+                                segments: [
+                                    {
+                                        label: 'Avg',
+                                        value: point.avg_ms ?? 0,
+                                        tone: 'neutral' as const,
+                                    },
+                                ],
+                            }))}
+                            valueFormat={(value) => `${value.toFixed(1)} ms`}
+                        />
+                    )}
+                </div>
 
                 {activeCategory === 'requests' && slowEndpoints.length > 0 && (
                     <SlowEndpointsTable endpoints={slowEndpoints} />
                 )}
 
                 <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <div className="border-b border-sidebar-border/70 px-4 py-3 dark:border-sidebar-border">
-                        <p className="font-medium capitalize">
+                    <div className="flex items-center justify-between gap-4 border-b border-sidebar-border/70 px-4 py-3 dark:border-sidebar-border">
+                        <p className="font-medium">
+                            {summary.total.toLocaleString()}{' '}
                             {CATEGORY_LABELS[activeCategory]}
                         </p>
+
+                        {entries.data.length > 0 && (
+                            <div className="relative w-full max-w-64">
+                                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    placeholder={`Search ${CATEGORY_LABELS[activeCategory].toLowerCase()} on this page`}
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="h-8 pl-8 text-sm"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="p-4">
@@ -362,23 +467,29 @@ export default function ProjectsShow({
                             <EmptyState
                                 message={`Once your app starts sending ${CATEGORY_LABELS[activeCategory].toLowerCase()} with this token, they'll show up here.`}
                             />
+                        ) : searchedEntries.length === 0 ? (
+                            <EmptyState
+                                message={`No ${CATEGORY_LABELS[activeCategory].toLowerCase()} on this page match "${search}".`}
+                            />
                         ) : (
                             <div className="space-y-4">
                                 {activeCategory === LOGS_CATEGORY && (
                                     <LogsTable
-                                        entries={entries.data as LogEntry[]}
+                                        entries={searchedEntries as LogEntry[]}
                                     />
                                 )}
                                 {activeCategory === METRICS_CATEGORY && (
                                     <MetricsTable
-                                        entries={entries.data as MetricEntry[]}
+                                        entries={
+                                            searchedEntries as MetricEntry[]
+                                        }
                                     />
                                 )}
                                 {activeCategory !== LOGS_CATEGORY &&
                                     activeCategory !== METRICS_CATEGORY && (
                                         <SpansTable
                                             entries={
-                                                entries.data as SpanEntry[]
+                                                searchedEntries as SpanEntry[]
                                             }
                                             projectId={project.id}
                                         />

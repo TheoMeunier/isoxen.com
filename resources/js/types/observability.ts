@@ -75,6 +75,7 @@ export type CategorySummary = {
     total: number;
     errors: number | null;
     slowest_ms: number | null;
+    avg_ms: number | null;
     /** The window these figures cover, matching the chart beside them. */
     hours: number;
 };
@@ -89,6 +90,39 @@ export type CategorySummary = {
 export type TimelinePoint = {
     at: string;
     count: number;
+};
+
+/**
+ * One hour of the duration chart. `avg_ms` is `null` (not `0`) for an hour
+ * with no spans -- a quiet hour has no duration to report, which is a
+ * different fact than "requests happened and were instant".
+ */
+export type DurationPoint = {
+    at: string;
+    avg_ms: number | null;
+};
+
+/**
+ * One segment of a category's headline breakdown -- an HTTP status class
+ * for Requests, a severity for Logs, or a generic success/failure split for
+ * everything else. `tone` picks the pill's colour; it's always paired with
+ * `label` so state is never colour alone.
+ */
+export type StatusSegment = {
+    label: string;
+    value: number;
+    tone: 'neutral' | 'warning' | 'critical';
+};
+
+/**
+ * The same breakdown as `StatusSegment`, per hour -- what the volume
+ * chart's stacked bars are made of. Every segment here carries the same
+ * `label`/`tone` as its counterpart in `statusBreakdown`, by construction
+ * (see ShowProjectController::statusTimeline()).
+ */
+export type StatusTimelinePoint = {
+    at: string;
+    segments: StatusSegment[];
 };
 
 /**

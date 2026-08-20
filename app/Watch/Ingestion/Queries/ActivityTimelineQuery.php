@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
+use App\Watch\Ingestion\Queries\Concerns\BucketsByHour;
 use App\Watch\Projects\Models\Project;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,12 +24,14 @@ use Illuminate\Support\Facades\DB;
  */
 class ActivityTimelineQuery
 {
+    use BucketsByHour;
+
     /**
      * @return array<int, array{at: string, count: int}>
      */
     public function execute(Project $project, string $table, ?string $type = null, int $hours = 24): array
     {
-        $since = Carbon::now('UTC')->subHours($hours - 1)->startOfHour();
+        $since  = Carbon::now('UTC')->subHours($hours - 1)->startOfHour();
         $bucket = $this->bucketExpression();
 
         $counts = DB::table($table)
@@ -49,21 +52,11 @@ class ActivityTimelineQuery
             $at = $since->copy()->addHours($hour);
 
             $series[] = [
-                'at' => $at->toIso8601String(),
+                'at'    => $at->toIso8601String(),
                 'count' => (int) ($counts[$at->format('Y-m-d H:00')] ?? 0),
             ];
         }
 
         return $series;
-    }
-
-    private function bucketExpression(): string
-    {
-        return DB::connection()->getDriverName() === 'pgsql'
-            // `AT TIME ZONE 'UTC'` is not decoration: without it the bucket
-            // is rendered in the database session's timezone, which need
-            // not be the application's, and the keys stop matching.
-            ? 'to_char(date_trunc(\'hour\', "time" AT TIME ZONE \'UTC\'), \'YYYY-MM-DD HH24:00\')'
-            : 'strftime(\'%Y-%m-%d %H:00\', "time")';
     }
 }
