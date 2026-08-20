@@ -19,6 +19,7 @@ use App\Watch\Ingestion\Support\ObservabilityCategories;
 use App\Watch\Projects\Models\Project;
 use App\Watch\Projects\Resources\ProjectResource;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -63,6 +64,27 @@ class ShowProjectController extends Controller
         $this->authorize('view', $project);
 
         $categorySlug = $request->query('category');
+
+        // Information isn't an observability category -- there's no span,
+        // log, or metric behind it, just the project's own settings (rename,
+        // ingestion token, delete). It renders the same page with the
+        // activity pipeline below skipped entirely, rather than teaching
+        // ObservabilityCategories about a "category" that carries no
+        // telemetry.
+        if ($categorySlug === 'information') {
+            return Inertia::render('projects/show', [
+                'project'          => new ProjectResource($project),
+                'activeCategory'   => 'information',
+                'entries'          => new LengthAwarePaginator([], 0, 25),
+                'summary'          => ['total' => 0, 'errors' => null, 'slowest_ms' => null, 'avg_ms' => null, 'hours' => 24],
+                'timeline'         => [],
+                'durationTimeline' => [],
+                'statusBreakdown'  => [],
+                'statusTimeline'   => [],
+                'slowEndpoints'    => [],
+            ]);
+        }
+
         $categorySlug = is_string($categorySlug) && ObservabilityCategories::isValid($categorySlug)
             ? $categorySlug
             : ObservabilityCategories::default();

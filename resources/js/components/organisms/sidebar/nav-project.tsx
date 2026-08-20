@@ -9,13 +9,14 @@ import {
     CalendarClock,
     Database,
     Globe,
-    type LucideIcon,
+    Info,
     Mail,
     ScrollText,
     TriangleAlert,
     Users,
     Zap,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -25,7 +26,10 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { index as projectsIndex, show } from '@/routes/projects';
-import type { CurrentProject, ObservabilityCategory } from '@/types/observability';
+import type {
+    CurrentProject,
+    ObservabilityCategory,
+} from '@/types/observability';
 
 type CategoryDef = {
     slug: ObservabilityCategory;
@@ -53,16 +57,64 @@ type CategoryDef = {
 };
 
 const ACTIVITY: CategoryDef[] = [
-    { slug: 'requests', label: 'Requests', icon: Globe, type: 'request', enabled: true },
-    { slug: 'jobs', label: 'Jobs', icon: BriefcaseBusiness, type: 'job', enabled: true },
-    { slug: 'commands', label: 'Commands', icon: Braces, type: 'command', enabled: true },
-    { slug: 'scheduled-tasks', label: 'Scheduled Tasks', icon: CalendarClock, type: 'scheduled_task', enabled: true },
-    { slug: 'exceptions', label: 'Exceptions', icon: TriangleAlert, type: 'exception', enabled: true },
-    { slug: 'queries', label: 'Queries', icon: Database, type: 'query', enabled: true },
-    { slug: 'notifications', label: 'Notifications', icon: Bell, type: 'notification', enabled: true },
+    {
+        slug: 'requests',
+        label: 'Requests',
+        icon: Globe,
+        type: 'request',
+        enabled: true,
+    },
+    {
+        slug: 'jobs',
+        label: 'Jobs',
+        icon: BriefcaseBusiness,
+        type: 'job',
+        enabled: true,
+    },
+    {
+        slug: 'commands',
+        label: 'Commands',
+        icon: Braces,
+        type: 'command',
+        enabled: true,
+    },
+    {
+        slug: 'scheduled-tasks',
+        label: 'Scheduled Tasks',
+        icon: CalendarClock,
+        type: 'scheduled_task',
+        enabled: true,
+    },
+    {
+        slug: 'exceptions',
+        label: 'Exceptions',
+        icon: TriangleAlert,
+        type: 'exception',
+        enabled: true,
+    },
+    {
+        slug: 'queries',
+        label: 'Queries',
+        icon: Database,
+        type: 'query',
+        enabled: true,
+    },
+    {
+        slug: 'notifications',
+        label: 'Notifications',
+        icon: Bell,
+        type: 'notification',
+        enabled: true,
+    },
     { slug: 'mail', label: 'Mail', icon: Mail, type: 'mail', enabled: true },
     { slug: 'cache', label: 'Cache', icon: Zap, type: 'cache', enabled: true },
-    { slug: 'outgoing-requests', label: 'Outgoing Requests', icon: ArrowUpRight, type: 'outgoing_request', enabled: true },
+    {
+        slug: 'outgoing-requests',
+        label: 'Outgoing Requests',
+        icon: ArrowUpRight,
+        type: 'outgoing_request',
+        enabled: true,
+    },
     { slug: 'metrics', label: 'Metrics', icon: BarChart3, enabled: true },
 ];
 
@@ -181,9 +233,30 @@ export function NavProject({
                         >
                             <Link href={projectsIndex()} prefetch>
                                 <ArrowLeft />
-                                <span className="truncate">
-                                    {project.name}
-                                </span>
+                                <span className="truncate">{project.name}</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarGroup>
+
+            <SidebarGroup className="px-2 py-0">
+                <SidebarGroupLabel>Project</SidebarGroupLabel>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            asChild
+                            isActive={active === 'information'}
+                            tooltip={{ children: 'Information' }}
+                        >
+                            <Link
+                                href={show.url(project.id, {
+                                    query: { category: 'information' },
+                                })}
+                                prefetch
+                            >
+                                <Info />
+                                <span>Information</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

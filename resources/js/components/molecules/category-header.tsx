@@ -1,15 +1,11 @@
-import { PeriodSelector } from '@/components/molecules/period-selector';
-
 /**
- * The per-category page header -- title and period picker -- shared by
- * every tab in the sidebar (Requests, Jobs, Commands, ...) rather than
- * rebuilt per tab.
+ * The per-category page title, shared by every tab in the sidebar
+ * (Requests, Jobs, Commands, ...) rather than rebuilt per tab.
+ *
+ * Used to also render the period picker beside the title; that now lives in
+ * the app header instead (see AppSidebarHeader / PeriodSelector), since a
+ * time window applies to the whole page, not just this one heading.
  */
 export function CategoryHeader({ label }: { label: string }) {
-    return (
-        <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">{label}</h2>
-            <PeriodSelector />
-        </div>
-    );
+    return <h2 className="text-xl font-semibold">{label}</h2>;
 }
