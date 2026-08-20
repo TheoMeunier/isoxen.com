@@ -36,6 +36,37 @@ export type LogEntry = {
 };
 
 /**
+ * A single span within one trace, as returned by `TraceSpansQuery` for the
+ * waterfall on a trace's detail page.
+ *
+ * Unlike `SpanEntry` (one category's table, most recent first), this
+ * carries `parent_span_id` and `attributes` -- what the waterfall needs to
+ * nest spans under their parent and to show what a span actually did.
+ */
+export type TraceSpan = {
+    span_id: string | null;
+    parent_span_id: string | null;
+    name: string | null;
+    type: string | null;
+    kind: number | null;
+    time: string;
+    end_time: string | null;
+    duration_nanos: number | null;
+    status_code: number | null;
+    status_message: string | null;
+    attributes: Record<string, unknown> | null;
+};
+
+/** A log line correlated to a trace, for the trace detail page. */
+export type TraceLog = {
+    time: string;
+    span_id: string | null;
+    severity_text: string | null;
+    severity_number: number | null;
+    body: string | null;
+};
+
+/**
  * The headline numbers above a category's table. `errors` is null for
  * categories where the notion doesn't apply (metrics), and `slowest_ms`
  * only exists for spans, which are the only entries with a duration.
@@ -58,6 +89,22 @@ export type CategorySummary = {
 export type TimelinePoint = {
     at: string;
     count: number;
+};
+
+/**
+ * One endpoint's aggregate latency over the summary window, as returned by
+ * `SlowEndpointsQuery` for the Requests category's "slowest endpoints"
+ * panel. `p50`/`p95`/`p99` are separate fields rather than a nested object
+ * so the table can sort by any one of them without extra unpacking.
+ */
+export type EndpointStat = {
+    name: string;
+    total: number;
+    errors: number;
+    avg_ms: number;
+    p50_ms: number;
+    p95_ms: number;
+    p99_ms: number;
 };
 
 /**

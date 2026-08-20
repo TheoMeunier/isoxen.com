@@ -1,14 +1,16 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { Check, Copy, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import DeleteProjectController from '@/actions/App/Watch/Projects/Controllers/DeleteProjectController';
 import EditProjectController from '@/actions/App/Watch/Projects/Controllers/EditProjectController';
 import Heading from '@/components/heading';
+import { ActivityChart } from '@/components/molecules/activity-chart';
 import ConfirmDialog from '@/components/molecules/confirm-dialog';
 import InputError from '@/components/molecules/forms/input-error';
-import { ActivityChart } from '@/components/molecules/activity-chart';
 import { PagerLinks } from '@/components/molecules/pager-links';
 import { StatTiles } from '@/components/molecules/stat-tiles';
+import { StatusBadge } from '@/components/molecules/status-badge';
+import { SlowEndpointsTable } from '@/components/organisms/slow-endpoints-table';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -22,8 +24,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useClipboard } from '@/hooks/use-clipboard';
 import { index } from '@/routes/projects';
+import { show as showTrace } from '@/routes/projects/traces';
 import type {
     CategorySummary,
+    EndpointStat,
     LogEntry,
     MetricEntry,
     ObservabilityCategory,
@@ -40,12 +44,6 @@ const SPAN_KINDS: Record<number, string> = {
     3: 'Client',
     4: 'Producer',
     5: 'Consumer',
-};
-
-const STATUS_CODES: Record<number, string> = {
-    0: 'Unset',
-    1: 'Ok',
-    2: 'Error',
 };
 
 // Categories whose entries don't come from `otel_spans` -- everything else
@@ -92,44 +90,22 @@ function formatDuration(nanos: number | null): string {
     return `${(nanos / 1_000_000).toFixed(1)} ms`;
 }
 
-/**
- * Status is a reserved colour role, and it always ships with its label —
- * never colour alone, which would be invisible to a colourblind reader.
- */
-function StatusBadge({ code }: { code: number | null }) {
-    if (code === null) {
-        return <span className="text-muted-foreground">—</span>;
-    }
-
-    const label = STATUS_CODES[code] ?? String(code);
-
-    if (code !== 2) {
-        return <span className="text-muted-foreground">{label}</span>;
-    }
-
-    return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#c33c3c]/10 px-2 py-0.5 font-medium text-[#c33c3c] dark:bg-[#e66767]/15 dark:text-[#e66767]">
-            <span
-                aria-hidden
-                className="size-1.5 rounded-full bg-current"
-            />
-            {label}
-        </span>
-    );
-}
-
 function EmptyState({ message }: { message: string }) {
     return (
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sidebar-border/70 py-16 text-center dark:border-sidebar-border">
             <p className="text-sm font-medium">No data received yet</p>
-            <p className="max-w-sm text-sm text-muted-foreground">
-                {message}
-            </p>
+            <p className="max-w-sm text-sm text-muted-foreground">{message}</p>
         </div>
     );
 }
 
-function SpansTable({ entries }: { entries: SpanEntry[] }) {
+function SpansTable({
+    entries,
+    projectId,
+}: {
+    entries: SpanEntry[];
+    projectId: number;
+}) {
     return (
         <table className="w-full text-left text-sm">
             <thead className="text-muted-foreground">
@@ -150,7 +126,21 @@ function SpansTable({ entries }: { entries: SpanEntry[] }) {
                         <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
                             {formatTime(entry.time)}
                         </td>
-                        <td className="py-2 pr-4">{entry.name ?? '—'}</td>
+                        <td className="py-2 pr-4">
+                            {entry.trace_id ? (
+                                <Link
+                                    href={showTrace.url({
+                                        project: projectId,
+                                        trace: entry.trace_id,
+                                    })}
+                                    className="hover:underline"
+                                >
+                                    {entry.name ?? '—'}
+                                </Link>
+                            ) : (
+                                (entry.name ?? '—')
+                            )}
+                        </td>
                         <td className="py-2 pr-4">
                             {entry.kind !== null
                                 ? (SPAN_KINDS[entry.kind] ?? entry.kind)
@@ -233,9 +223,7 @@ function LogsTable({ entries }: { entries: LogEntry[] }) {
 }
 
 type Entries =
-    | Paginated<SpanEntry>
-    | Paginated<MetricEntry>
-    | Paginated<LogEntry>;
+    Paginated<SpanEntry> | Paginated<MetricEntry> | Paginated<LogEntry>;
 
 export default function ProjectsShow({
     project,
@@ -243,12 +231,14 @@ export default function ProjectsShow({
     entries,
     summary,
     timeline,
+    slowEndpoints,
 }: {
     project: Project;
     activeCategory: ObservabilityCategory;
     entries: Entries;
     summary: CategorySummary;
     timeline: TimelinePoint[];
+    slowEndpoints: EndpointStat[];
 }) {
     const [copiedText, copy] = useClipboard();
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -291,9 +281,7 @@ export default function ProjectsShow({
                                                 defaultValue={project.name}
                                             />
 
-                                            <InputError
-                                                message={errors.name}
-                                            />
+                                            <InputError message={errors.name} />
                                         </div>
 
                                         <DialogFooter className="gap-2">
@@ -322,8 +310,8 @@ export default function ProjectsShow({
                 <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                     <p className="font-medium">Ingestion token</p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Configure your app's OpenTelemetry exporter to send
-                        data to this project using this token.
+                        Configure your app's OpenTelemetry exporter to send data
+                        to this project using this token.
                     </p>
 
                     {project.token && (
@@ -358,6 +346,10 @@ export default function ProjectsShow({
                     </>
                 )}
 
+                {activeCategory === 'requests' && slowEndpoints.length > 0 && (
+                    <SlowEndpointsTable endpoints={slowEndpoints} />
+                )}
+
                 <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                     <div className="border-b border-sidebar-border/70 px-4 py-3 dark:border-sidebar-border">
                         <p className="font-medium capitalize">
@@ -379,9 +371,7 @@ export default function ProjectsShow({
                                 )}
                                 {activeCategory === METRICS_CATEGORY && (
                                     <MetricsTable
-                                        entries={
-                                            entries.data as MetricEntry[]
-                                        }
+                                        entries={entries.data as MetricEntry[]}
                                     />
                                 )}
                                 {activeCategory !== LOGS_CATEGORY &&
@@ -390,6 +380,7 @@ export default function ProjectsShow({
                                             entries={
                                                 entries.data as SpanEntry[]
                                             }
+                                            projectId={project.id}
                                         />
                                     )}
 

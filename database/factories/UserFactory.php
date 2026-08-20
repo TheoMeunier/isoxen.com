@@ -13,6 +13,18 @@ use Illuminate\Support\Str;
 class UserFactory extends Factory
 {
     /**
+     * The model this factory creates.
+     *
+     * Laravel's default factory<->model guessing assumes App\Models\*, so
+     * it can't find a model living under a feature namespace like
+     * App\Auth\Models\User on its own -- this makes the pairing explicit
+     * instead.
+     *
+     * @var class-string<User>
+     */
+    protected $model = User::class;
+
+    /**
      * The current password being used by the factory.
      */
     protected static ?string $password;

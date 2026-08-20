@@ -22,7 +22,7 @@ final class OtlpSpansParser
     public static function toRows(int $projectId, array $payload): array
     {
         $rows = [];
-        $now = Carbon::now();
+        $now  = Carbon::now();
 
         foreach ($payload['resourceSpans'] ?? [] as $resourceSpan) {
             $resourceAttributes = OtlpAttributes::toArray($resourceSpan['resource']['attributes'] ?? []);
@@ -41,11 +41,11 @@ final class OtlpSpansParser
                     $attributes = OtlpAttributes::toArray($span['attributes'] ?? []);
 
                     $rows[] = [
-                        'project_id' => $projectId,
-                        'trace_id' => OtlpValue::id($span['traceId'] ?? null, 16),
-                        'span_id' => OtlpValue::id($span['spanId'] ?? null, 8),
+                        'project_id'     => $projectId,
+                        'trace_id'       => OtlpValue::id($span['traceId'] ?? null, 16),
+                        'span_id'        => OtlpValue::id($span['spanId'] ?? null, 8),
                         'parent_span_id' => OtlpValue::id($span['parentSpanId'] ?? null, 8),
-                        'name' => $span['name'] ?? null,
+                        'name'           => $span['name'] ?? null,
                         // Not a standard OTLP field: populated from the
                         // `isoxen.type` attribute set by isoxen's own
                         // instrumentation client, used to drive the
@@ -54,15 +54,21 @@ final class OtlpSpansParser
                         // are stored as uncategorized (null).
                         'type' => $attributes['isoxen.type'] ?? null,
                         'kind' => OtlpValue::spanKind($span['kind'] ?? null),
-                        'time' => $startTime,
-                        'end_time' => OtlpTimestamp::toCarbon($span['endTimeUnixNano'] ?? null),
-                        'duration_nanos' => self::durationNanos($span),
-                        'status_code' => OtlpValue::statusCode($span['status']['code'] ?? null),
-                        'status_message' => $span['status']['message'] ?? null,
+                        // Formatted explicitly (rather than passing the
+                        // Carbon instances above) because a raw Carbon bound
+                        // to a `DB::table()->insert()` row is stringified via
+                        // the connection's default date format, which drops
+                        // sub-second precision -- see
+                        // OtlpTimestamp::toDatabaseString().
+                        'time'                => OtlpTimestamp::toDatabaseString($span['startTimeUnixNano'] ?? null),
+                        'end_time'            => OtlpTimestamp::toDatabaseString($span['endTimeUnixNano'] ?? null),
+                        'duration_nanos'      => self::durationNanos($span),
+                        'status_code'         => OtlpValue::statusCode($span['status']['code'] ?? null),
+                        'status_message'      => $span['status']['message'] ?? null,
                         'resource_attributes' => json_encode($resourceAttributes),
-                        'attributes' => json_encode($attributes),
-                        'raw' => json_encode($span),
-                        'created_at' => $now,
+                        'attributes'          => json_encode($attributes),
+                        'raw'                 => json_encode($span),
+                        'created_at'          => $now,
                     ];
                 }
             }

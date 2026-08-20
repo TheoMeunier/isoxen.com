@@ -30,6 +30,15 @@ class Project extends Model
     use HasFactory;
 
     /**
+     * Laravel's default factory guessing assumes App\Models\*, so it can't
+     * find ProjectFactory from this feature namespace on its own.
+     */
+    protected static function newFactory(): ProjectFactory
+    {
+        return ProjectFactory::new();
+    }
+
+    /**
      * The user the project belongs to.
      *
      * @return BelongsTo<User, $this>
@@ -46,7 +55,7 @@ class Project extends Model
     protected static function booted(): void
     {
         static::creating(function (Project $project): void {
-            $project->slug ??= Str::slug($project->name).'-'.Str::lower(Str::random(6));
+            $project->slug  ??= Str::slug($project->name).'-'.Str::lower(Str::random(6));
             $project->token ??= 'proj_'.Str::random(40);
         });
     }

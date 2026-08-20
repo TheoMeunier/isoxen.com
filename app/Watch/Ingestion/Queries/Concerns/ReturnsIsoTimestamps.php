@@ -20,6 +20,13 @@ use Illuminate\Support\Carbon;
  * Emitting real ISO-8601 makes the parse well-defined, and the browser can
  * then render it in the reader's own timezone — which is the whole point of
  * having stored an absolute instant.
+ *
+ * Formatted by hand rather than via `Carbon::toIso8601String()`: that helper
+ * formats with `DateTime::ATOM` (`Y-m-d\TH:i:sP`), which drops the
+ * sub-second component entirely. For most timestamps in the app that's
+ * fine, but a trace waterfall measures spans in milliseconds -- truncating
+ * to whole seconds here collapses every span's position/duration on the
+ * timeline back to the same bug the storage layer was just fixed for.
  */
 trait ReturnsIsoTimestamps
 {
@@ -33,7 +40,7 @@ trait ReturnsIsoTimestamps
                 continue;
             }
 
-            $row->{$column} = Carbon::parse($row->{$column})->toIso8601String();
+            $row->{$column} = Carbon::parse($row->{$column})->format('Y-m-d\TH:i:s.uP');
         }
 
         return $row;

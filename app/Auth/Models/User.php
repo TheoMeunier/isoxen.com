@@ -37,6 +37,15 @@ class User extends Authenticatable
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     /**
+     * Laravel's default factory guessing assumes App\Models\*, so it can't
+     * find UserFactory from this feature namespace on its own.
+     */
+    protected static function newFactory(): UserFactory
+    {
+        return UserFactory::new();
+    }
+
+    /**
      * The projects owned by the user.
      *
      * @return HasMany<Project, $this>

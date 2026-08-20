@@ -22,7 +22,7 @@ final class OtlpLogsParser
     public static function toRows(int $projectId, array $payload): array
     {
         $rows = [];
-        $now = Carbon::now();
+        $now  = Carbon::now();
 
         foreach ($payload['resourceLogs'] ?? [] as $resourceLog) {
             $resourceAttributes = OtlpAttributes::toArray($resourceLog['resource']['attributes'] ?? []);
@@ -38,17 +38,21 @@ final class OtlpLogsParser
                     }
 
                     $rows[] = [
-                        'project_id' => $projectId,
-                        'trace_id' => OtlpValue::id($logRecord['traceId'] ?? null, 16),
-                        'span_id' => OtlpValue::id($logRecord['spanId'] ?? null, 8),
+                        'project_id'      => $projectId,
+                        'trace_id'        => OtlpValue::id($logRecord['traceId'] ?? null, 16),
+                        'span_id'         => OtlpValue::id($logRecord['spanId'] ?? null, 8),
                         'severity_number' => OtlpValue::severityNumber($logRecord['severityNumber'] ?? null),
-                        'severity_text' => $logRecord['severityText'] ?? null,
-                        'body' => self::body($logRecord['body'] ?? null),
-                        'time' => $time,
+                        'severity_text'   => $logRecord['severityText'] ?? null,
+                        'body'            => self::body($logRecord['body'] ?? null),
+                        // Formatted explicitly rather than passing $time
+                        // directly -- see OtlpTimestamp::toDatabaseString().
+                        'time' => OtlpTimestamp::toDatabaseString(
+                            $logRecord['timeUnixNano'] ?? $logRecord['observedTimeUnixNano'] ?? null,
+                        ),
                         'resource_attributes' => json_encode($resourceAttributes),
-                        'attributes' => json_encode(OtlpAttributes::toArray($logRecord['attributes'] ?? [])),
-                        'raw' => json_encode($logRecord),
-                        'created_at' => $now,
+                        'attributes'          => json_encode(OtlpAttributes::toArray($logRecord['attributes'] ?? [])),
+                        'raw'                 => json_encode($logRecord),
+                        'created_at'          => $now,
                     ];
                 }
             }
@@ -65,7 +69,7 @@ final class OtlpLogsParser
 
         return match (true) {
             array_key_exists('stringValue', $body) => (string) $body['stringValue'],
-            default => json_encode($body),
+            default                                => json_encode($body),
         };
     }
 }

@@ -30,7 +30,7 @@ final class OtlpMetricsParser
     public static function toRows(int $projectId, array $payload): array
     {
         $rows = [];
-        $now = Carbon::now();
+        $now  = Carbon::now();
 
         foreach ($payload['resourceMetrics'] ?? [] as $resourceMetric) {
             $resourceAttributes = OtlpAttributes::toArray($resourceMetric['resource']['attributes'] ?? []);
@@ -52,15 +52,17 @@ final class OtlpMetricsParser
 
                         $rows[] = [
                             'project_id' => $projectId,
-                            'name' => $metric['name'] ?? null,
-                            'unit' => $metric['unit'] ?? null,
-                            'type' => self::normalizeTypeName($type),
-                            'time' => $time,
-                            'value' => self::numericValue($dataPoint),
+                            'name'       => $metric['name'] ?? null,
+                            'unit'       => $metric['unit'] ?? null,
+                            'type'       => self::normalizeTypeName($type),
+                            // Formatted explicitly rather than passing $time
+                            // directly -- see OtlpTimestamp::toDatabaseString().
+                            'time'                => OtlpTimestamp::toDatabaseString($dataPoint['timeUnixNano'] ?? null),
+                            'value'               => self::numericValue($dataPoint),
                             'resource_attributes' => json_encode($resourceAttributes),
-                            'attributes' => json_encode(OtlpAttributes::toArray($dataPoint['attributes'] ?? [])),
-                            'raw' => json_encode($dataPoint),
-                            'created_at' => $now,
+                            'attributes'          => json_encode(OtlpAttributes::toArray($dataPoint['attributes'] ?? [])),
+                            'raw'                 => json_encode($dataPoint),
+                            'created_at'          => $now,
                         ];
                     }
                 }
@@ -88,7 +90,7 @@ final class OtlpMetricsParser
     {
         return match ($type) {
             'exponentialHistogram' => 'exponential_histogram',
-            default => $type,
+            default                => $type,
         };
     }
 
@@ -99,12 +101,12 @@ final class OtlpMetricsParser
     {
         return match (true) {
             array_key_exists('asDouble', $dataPoint) => (float) $dataPoint['asDouble'],
-            array_key_exists('asInt', $dataPoint) => (float) $dataPoint['asInt'],
+            array_key_exists('asInt', $dataPoint)    => (float) $dataPoint['asInt'],
             // Histograms/summaries don't have a single scalar value; the
             // aggregate sum is stored as a rough approximation, the full
             // shape (buckets/quantiles) stays available in `raw`.
             array_key_exists('sum', $dataPoint) => (float) $dataPoint['sum'],
-            default => null,
+            default                             => null,
         };
     }
 }

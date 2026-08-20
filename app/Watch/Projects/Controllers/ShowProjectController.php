@@ -10,6 +10,7 @@ use App\Watch\Ingestion\Queries\CategorySummaryQuery;
 use App\Watch\Ingestion\Queries\RecentLogsQuery;
 use App\Watch\Ingestion\Queries\RecentMetricsQuery;
 use App\Watch\Ingestion\Queries\RecentSpansQuery;
+use App\Watch\Ingestion\Queries\SlowEndpointsQuery;
 use App\Watch\Ingestion\Support\ObservabilityCategories;
 use App\Watch\Projects\Models\Project;
 use App\Watch\Projects\Resources\ProjectResource;
@@ -25,6 +26,7 @@ class ShowProjectController extends Controller
         private readonly RecentLogsQuery $recentLogsQuery,
         private readonly ActivityTimelineQuery $activityTimelineQuery,
         private readonly CategorySummaryQuery $categorySummaryQuery,
+        private readonly SlowEndpointsQuery $slowEndpointsQuery,
     ) {}
 
     /**
@@ -45,21 +47,31 @@ class ShowProjectController extends Controller
 
         $entries = match ($category['source']) {
             'metrics' => $this->recentMetricsQuery->execute($project),
-            'logs' => $this->recentLogsQuery->execute($project),
-            default => $this->recentSpansQuery->execute($project, $category['type']),
+            'logs'    => $this->recentLogsQuery->execute($project),
+            default   => $this->recentSpansQuery->execute($project, $category['type']),
         };
 
         $table = ObservabilityCategories::table($categorySlug);
+
+        // The endpoint breakdown only makes sense for Requests -- other
+        // categories don't have a stable "name" that's worth grouping by
+        // (a query's text, a job's name) the way an endpoint route is, and
+        // computing it costs several extra queries (see SlowEndpointsQuery),
+        // so it's skipped entirely when it wouldn't be shown.
+        $slowEndpoints = $categorySlug === 'requests'
+            ? $this->slowEndpointsQuery->execute($project)
+            : collect();
 
         // `currentProject` and `categoryCounts` power the app sidebar and
         // are shared for every project-bound route by
         // HandleInertiaRequests, so they aren't repeated here.
         return Inertia::render('projects/show', [
-            'project' => new ProjectResource($project),
+            'project'        => new ProjectResource($project),
             'activeCategory' => $categorySlug,
-            'entries' => $entries,
-            'summary' => $this->categorySummaryQuery->execute($project, $table, $category['type']),
-            'timeline' => $this->activityTimelineQuery->execute($project, $table, $category['type']),
+            'entries'        => $entries,
+            'summary'        => $this->categorySummaryQuery->execute($project, $table, $category['type']),
+            'timeline'       => $this->activityTimelineQuery->execute($project, $table, $category['type']),
+            'slowEndpoints'  => $slowEndpoints,
         ]);
     }
 }

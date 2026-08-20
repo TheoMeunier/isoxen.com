@@ -13,6 +13,18 @@ use Illuminate\Support\Str;
 class ProjectFactory extends Factory
 {
     /**
+     * The model this factory creates.
+     *
+     * Laravel's default factory<->model guessing assumes App\Models\*, so
+     * it can't find a model living under a feature namespace like
+     * App\Watch\Projects\Models\Project on its own -- this makes the
+     * pairing explicit instead.
+     *
+     * @var class-string<Project>
+     */
+    protected $model = Project::class;
+
+    /**
      * Define the model's default state.
      *
      * @return array<string, mixed>
