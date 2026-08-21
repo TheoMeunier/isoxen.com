@@ -3,6 +3,8 @@ import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Heading from '@/components/heading';
 import { CategoryHeader } from '@/components/molecules/category-header';
+import { LogSeverityBadge } from '@/components/molecules/log-severity-badge';
+import { MethodBadge, parseHttpMethod, stripHttpMethod } from '@/components/molecules/method-badge';
 import { PagerLinks } from '@/components/molecules/pager-links';
 import { PeriodSelector } from '@/components/molecules/period-selector';
 import { StatusBadge } from '@/components/molecules/status-badge';
@@ -104,15 +106,24 @@ function EmptyState({ message }: { message: string }) {
 function SpansTable({
     entries,
     projectId,
+    showMethod,
 }: {
     entries: SpanEntry[];
     projectId: number;
+    // Only the Requests category's span names follow the "{METHOD} {route}"
+    // convention -- every other category's `name` is something else
+    // entirely (a SQL query, a job class, ...), so the Method column only
+    // makes sense here.
+    showMethod: boolean;
 }) {
     return (
         <table className="w-full text-left text-sm">
             <thead className="text-muted-foreground">
                 <tr className="border-b border-sidebar-border/70 dark:border-sidebar-border">
                     <th className="py-2 pr-4 font-medium">Time</th>
+                    {showMethod && (
+                        <th className="py-2 pr-4 font-medium">Method</th>
+                    )}
                     <th className="py-2 pr-4 font-medium">Name</th>
                     <th className="py-2 pr-4 font-medium">Kind</th>
                     <th className="py-2 pr-4 font-medium">Duration</th>
@@ -120,42 +131,56 @@ function SpansTable({
                 </tr>
             </thead>
             <tbody>
-                {entries.map((entry, i) => (
-                    <tr
-                        key={`${entry.trace_id}-${entry.span_id}-${i}`}
-                        className="border-b border-sidebar-border/40 last:border-0 dark:border-sidebar-border/60"
-                    >
-                        <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
-                            {formatTime(entry.time)}
-                        </td>
-                        <td className="py-2 pr-4">
-                            {entry.trace_id ? (
-                                <Link
-                                    href={showTrace.url({
-                                        project: projectId,
-                                        trace: entry.trace_id,
-                                    })}
-                                    className="hover:underline"
-                                >
-                                    {entry.name ?? '—'}
-                                </Link>
-                            ) : (
-                                (entry.name ?? '—')
+                {entries.map((entry, i) => {
+                    const method = showMethod
+                        ? parseHttpMethod(entry.name)
+                        : null;
+                    const name = showMethod
+                        ? stripHttpMethod(entry.name, method)
+                        : (entry.name ?? '—');
+
+                    return (
+                        <tr
+                            key={`${entry.trace_id}-${entry.span_id}-${i}`}
+                            className="border-b border-sidebar-border/40 last:border-0 dark:border-sidebar-border/60"
+                        >
+                            <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
+                                {formatTime(entry.time)}
+                            </td>
+                            {showMethod && (
+                                <td className="py-2 pr-4">
+                                    <MethodBadge method={method} />
+                                </td>
                             )}
-                        </td>
-                        <td className="py-2 pr-4">
-                            {entry.kind !== null
-                                ? (SPAN_KINDS[entry.kind] ?? entry.kind)
-                                : '—'}
-                        </td>
-                        <td className="py-2 pr-4">
-                            {formatDuration(entry.duration_nanos)}
-                        </td>
-                        <td className="py-2">
-                            <StatusBadge code={entry.status_code} />
-                        </td>
-                    </tr>
-                ))}
+                            <td className="py-2 pr-4">
+                                {entry.trace_id ? (
+                                    <Link
+                                        href={showTrace.url({
+                                            project: projectId,
+                                            trace: entry.trace_id,
+                                        })}
+                                        className="hover:underline"
+                                    >
+                                        {name}
+                                    </Link>
+                                ) : (
+                                    name
+                                )}
+                            </td>
+                            <td className="py-2 pr-4">
+                                {entry.kind !== null
+                                    ? (SPAN_KINDS[entry.kind] ?? entry.kind)
+                                    : '—'}
+                            </td>
+                            <td className="py-2 pr-4">
+                                {formatDuration(entry.duration_nanos)}
+                            </td>
+                            <td className="py-2">
+                                <StatusBadge code={entry.status_code} />
+                            </td>
+                        </tr>
+                    );
+                })}
             </tbody>
         </table>
     );
@@ -214,7 +239,7 @@ function LogsTable({ entries }: { entries: LogEntry[] }) {
                             {formatTime(entry.time)}
                         </td>
                         <td className="py-2 pr-4">
-                            {entry.severity_text ?? '—'}
+                            <LogSeverityBadge entry={entry} />
                         </td>
                         <td className="py-2">{entry.body ?? '—'}</td>
                     </tr>
@@ -456,6 +481,9 @@ export default function ProjectsShow({
                                                 searchedEntries as SpanEntry[]
                                             }
                                             projectId={project.id}
+                                            showMethod={
+                                                activeCategory === 'requests'
+                                            }
                                         />
                                     )}
 

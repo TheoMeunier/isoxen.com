@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
+import { LogSeverityBadge } from '@/components/molecules/log-severity-badge';
 import { StatusBadge } from '@/components/molecules/status-badge';
 import { TraceWaterfall } from '@/components/organisms/trace-waterfall';
 import { Button } from '@/components/ui/button';
@@ -276,7 +277,7 @@ export default function ProjectsTrace({
                                                 {formatTime(log.time)}
                                             </td>
                                             <td className="py-2 pr-4">
-                                                {log.severity_text ?? '—'}
+                                                <LogSeverityBadge entry={log} />
                                             </td>
                                             <td className="py-2">
                                                 {log.body ?? '—'}
