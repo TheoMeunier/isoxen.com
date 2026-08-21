@@ -9,6 +9,7 @@ use App\Watch\Ingestion\Queries\ActivityTimelineQuery;
 use App\Watch\Ingestion\Queries\CategorySummaryQuery;
 use App\Watch\Ingestion\Queries\DurationTimelineQuery;
 use App\Watch\Ingestion\Queries\LogSeverityBreakdownQuery;
+use App\Watch\Ingestion\Queries\OnlineUsersQuery;
 use App\Watch\Ingestion\Queries\RecentLogsQuery;
 use App\Watch\Ingestion\Queries\RecentMetricsQuery;
 use App\Watch\Ingestion\Queries\RecentSpansQuery;
@@ -52,6 +53,7 @@ class ShowProjectController extends Controller
         private readonly RequestStatusBreakdownQuery $requestStatusBreakdownQuery,
         private readonly LogSeverityBreakdownQuery $logSeverityBreakdownQuery,
         private readonly StatusTimelineQuery $statusTimelineQuery,
+        private readonly OnlineUsersQuery $onlineUsersQuery,
     ) {}
 
     /**
@@ -82,6 +84,7 @@ class ShowProjectController extends Controller
                 'statusBreakdown'  => [],
                 'statusTimeline'   => [],
                 'slowEndpoints'    => [],
+                'onlineUsers'      => [],
             ]);
         }
 
@@ -90,43 +93,56 @@ class ShowProjectController extends Controller
             : ObservabilityCategories::default();
 
         $category = ObservabilityCategories::get($categorySlug);
+        $table    = ObservabilityCategories::table($categorySlug);
 
-        $entries = match ($category['source']) {
-            'metrics' => $this->recentMetricsQuery->execute($project),
-            'logs'    => $this->recentLogsQuery->execute($project),
-            default   => $this->recentSpansQuery->execute($project, $category['type']),
+        // Memoized rather than called directly from both the `summary` and
+        // `statusBreakdown` closures below: on a full load both run, and
+        // without this they'd each re-execute CategorySummaryQuery.
+        $summary        = null;
+        $resolveSummary = function () use (&$summary, $project, $table, $category) {
+            return $summary ??= $this->categorySummaryQuery->execute($project, $table, $category['type']);
         };
-
-        $table = ObservabilityCategories::table($categorySlug);
-
-        // The endpoint breakdown only makes sense for Requests -- other
-        // categories don't have a stable "name" that's worth grouping by
-        // (a query's text, a job's name) the way an endpoint route is, and
-        // computing it costs several extra queries (see SlowEndpointsQuery),
-        // so it's skipped entirely when it wouldn't be shown.
-        $slowEndpoints = $categorySlug === 'requests'
-            ? $this->slowEndpointsQuery->execute($project)
-            : collect();
-
-        $summary = $this->categorySummaryQuery->execute($project, $table, $category['type']);
 
         // `currentProject` and `categoryCounts` power the app sidebar and
         // are shared for every project-bound route by
         // HandleInertiaRequests, so they aren't repeated here.
+        //
+        // Every prop below is a Closure, not a plain value: the Users tab
+        // polls this same route for `onlineUsers` alone (see
+        // projects/show.tsx), and Inertia only invokes a Closure prop when
+        // it's actually going into the response. Plain values are computed
+        // by PHP regardless of what the request asked for, which would
+        // make each poll silently redo the entries/timeline/slow-endpoints
+        // queries too.
         return Inertia::render('projects/show', [
             'project'        => new ProjectResource($project),
             'activeCategory' => $categorySlug,
-            'entries'        => $entries,
-            'summary'        => $summary,
-            'timeline'       => $this->activityTimelineQuery->execute($project, $table, $category['type']),
+            'entries'        => fn () => match ($category['source']) {
+                'metrics' => $this->recentMetricsQuery->execute($project),
+                'logs'    => $this->recentLogsQuery->execute($project),
+                default   => $this->recentSpansQuery->execute($project, $category['type']),
+            },
+            'summary'  => $resolveSummary,
+            'timeline' => fn () => $this->activityTimelineQuery->execute($project, $table, $category['type']),
             // Duration only means anything for spans -- logs and metrics
             // don't carry a `duration_nanos` column.
-            'durationTimeline' => $table === 'otel_spans'
+            'durationTimeline' => fn () => $table === 'otel_spans'
                 ? $this->durationTimelineQuery->execute($project, $category['type'])
                 : [],
-            'statusBreakdown' => $this->statusBreakdown($project, $categorySlug, $table, $summary),
-            'statusTimeline'  => $this->statusTimeline($project, $categorySlug, $table, $category['type']),
-            'slowEndpoints'   => $slowEndpoints,
+            'statusBreakdown' => fn () => $this->statusBreakdown($project, $categorySlug, $table, $resolveSummary()),
+            'statusTimeline'  => fn () => $this->statusTimeline($project, $categorySlug, $table, $category['type']),
+            // The endpoint breakdown only makes sense for Requests -- other
+            // categories don't have a stable "name" that's worth grouping
+            // by (a query's text, a job's name) the way an endpoint route
+            // is, and computing it costs several extra queries (see
+            // SlowEndpointsQuery), so it's skipped entirely otherwise.
+            'slowEndpoints' => fn () => $categorySlug === 'requests'
+                ? $this->slowEndpointsQuery->execute($project)
+                : collect(),
+            // Only the Users tab reads this -- see the polling note above.
+            'onlineUsers' => fn () => $categorySlug === 'users'
+                ? $this->onlineUsersQuery->execute($project)
+                : [],
         ]);
     }
 

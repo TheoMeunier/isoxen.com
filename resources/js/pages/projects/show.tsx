@@ -1,12 +1,13 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Heading from '@/components/heading';
 import { CategoryHeader } from '@/components/molecules/category-header';
 import { PagerLinks } from '@/components/molecules/pager-links';
 import { PeriodSelector } from '@/components/molecules/period-selector';
 import { StatusBadge } from '@/components/molecules/status-badge';
 import { InformationPanel } from '@/components/organisms/information-panel';
+import { OnlineUsersPanel } from '@/components/organisms/online-users-panel';
 import { SlowEndpointsTable } from '@/components/organisms/slow-endpoints-table';
 import { StatChartPanel } from '@/components/organisms/stat-chart-panel';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import type {
     LogEntry,
     MetricEntry,
     ObservabilityCategory,
+    OnlineUser,
     Paginated,
     SpanEntry,
     StatusSegment,
@@ -26,6 +28,11 @@ import type {
     TimelinePoint,
 } from '@/types/observability';
 import type { Project } from '@/types/project';
+
+// How often the Users tab asks the server for a fresh `onlineUsers` --
+// there's no WebSocket server running yet (see OnlineUsersPanel), so this
+// is the lightest way to keep that list current.
+const ONLINE_USERS_POLL_MS = 12_000;
 
 // The Information tab shares this page and route (`?category=information`)
 // but isn't an observability category -- it has no telemetry behind it, so
@@ -230,6 +237,7 @@ export default function ProjectsShow({
     statusBreakdown,
     statusTimeline,
     slowEndpoints,
+    onlineUsers,
 }: {
     project: Project;
     activeCategory: ActiveTab;
@@ -240,8 +248,25 @@ export default function ProjectsShow({
     statusBreakdown: StatusSegment[];
     statusTimeline: StatusTimelinePoint[];
     slowEndpoints: EndpointStat[];
+    onlineUsers: OnlineUser[];
 }) {
     const [search, setSearch] = useState('');
+
+    // Only the Users tab needs a live view -- everywhere else this is a
+    // no-op interval that's immediately cleared. Requesting `onlineUsers`
+    // alone (a partial reload) skips every other query on the server; see
+    // ShowProjectController.
+    useEffect(() => {
+        if (activeCategory !== 'users') {
+            return;
+        }
+
+        const interval = setInterval(() => {
+            router.reload({ only: ['onlineUsers'] });
+        }, ONLINE_USERS_POLL_MS);
+
+        return () => clearInterval(interval);
+    }, [activeCategory]);
 
     if (activeCategory === 'information') {
         return (
@@ -252,6 +277,26 @@ export default function ProjectsShow({
                     <Heading title={project.name} description={project.slug} />
 
                     <InformationPanel project={project} />
+                </div>
+            </>
+        );
+    }
+
+    // The Users tab shows who's connected right now, not a historical log
+    // -- a different enough job that it gets its own layout rather than
+    // squeezing into the stat-panels-plus-table one every other category
+    // shares.
+    if (activeCategory === 'users') {
+        return (
+            <>
+                <Head title={project.name} />
+
+                <div className="flex flex-1 flex-col gap-6 p-4">
+                    <Heading title={project.name} description={project.slug} />
+
+                    <CategoryHeader label={CATEGORY_LABELS.users} />
+
+                    <OnlineUsersPanel users={onlineUsers} />
                 </div>
             </>
         );

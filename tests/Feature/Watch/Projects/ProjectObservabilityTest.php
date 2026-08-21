@@ -76,6 +76,85 @@ test('the information tab skips the activity pipeline entirely', function () {
             ->has('slowEndpoints', 0));
 });
 
+test('the users category reports who is currently online', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+
+    DB::table('otel_spans')->insert([
+        'project_id' => $project->id,
+        'trace_id'   => '5b8aa5a2d2c872e8321cf37308d69df2',
+        'span_id'    => '051581bf3cb55c13',
+        'name'       => 'user login',
+        'type'       => 'user',
+        'time'       => now(),
+        'attributes' => json_encode([
+            'enduser.id'             => '42',
+            'user.email'             => 'jane@example.com',
+            'isoxen.user.operation'  => 'login',
+        ]),
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('projects.show', [$project, 'category' => 'users']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('onlineUsers', 1)
+            ->where('onlineUsers.0.id', '42')
+            ->where('onlineUsers.0.email', 'jane@example.com'));
+});
+
+test('a user is only online if their most recent event is a login', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+
+    // CarbonInterface, not Carbon: the app configures Date::use(CarbonImmutable::class)
+    // (see AppServiceProvider), so now()->subMinutes(...) below may hand back
+    // either Carbon or CarbonImmutable depending on boot order.
+    $insert = function (string $id, string $operation, Carbon\CarbonInterface $time) use ($project): void {
+        DB::table('otel_spans')->insert([
+            'project_id' => $project->id,
+            'trace_id'   => bin2hex(random_bytes(16)),
+            'span_id'    => bin2hex(random_bytes(8)),
+            'name'       => "user {$operation}",
+            'type'       => 'user',
+            'time'       => $time,
+            'attributes' => json_encode([
+                'enduser.id'            => $id,
+                'isoxen.user.operation' => $operation,
+            ]),
+            'created_at' => now(),
+        ]);
+    };
+
+    // Logged in, then out: not online.
+    $insert('1', 'login', now()->subMinutes(10));
+    $insert('1', 'logout', now()->subMinutes(5));
+
+    // Logged out, then back in: online, even though an older event says
+    // otherwise -- the query has to key off the most recent event per
+    // user, not just whichever row it sees.
+    $insert('2', 'login', now()->subMinutes(10));
+    $insert('2', 'logout', now()->subMinutes(8));
+    $insert('2', 'login', now()->subMinutes(1));
+
+    $this->actingAs($user)
+        ->get(route('projects.show', [$project, 'category' => 'users']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('onlineUsers', 1)
+            ->where('onlineUsers.0.id', '2'));
+});
+
+test('other categories do not compute who is online', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    makeSpan($project->id, 'request', 'GET /orders');
+
+    $this->actingAs($user)
+        ->get(route('projects.show', $project))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('onlineUsers', 0));
+});
+
 test('the sidebar counts are grouped by span type', function () {
     $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();

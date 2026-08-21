@@ -5,6 +5,8 @@ namespace Isoxen\Client\Instrumentation;
 use Illuminate\Auth\Events\Authenticated;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Isoxen\Client\Facades\OpenTelemetry;
 use Isoxen\Client\Facades\Tracer;
 use Isoxen\Client\SpanType;
 
@@ -15,9 +17,15 @@ use Isoxen\Client\SpanType;
  * records explicit login/logout events as their own spans, which is what
  * the Users tab actually reads from.
  *
- * Only the identifier is sent by default: names and email addresses are
- * personal data, and the monitored application shouldn't leak them to
- * isoxen without deciding to.
+ * `enduser.id` is always set directly -- it's the identifier the Users tab
+ * groups by, and it doesn't depend on the resolver being configured. On top
+ * of that, when `isoxen.user_context` is enabled, the span also picks up
+ * whatever {@see \Isoxen\Client\Support\UserContextResolver} resolves for
+ * this user -- nothing beyond the id by default, but the application can
+ * widen that (name, email, ...) via
+ * `Isoxen\Client\Facades\OpenTelemetry::user(fn ($user) => [...])`.
+ * Same gate, same resolver as request spans and logs: a login event isn't a
+ * loophole around the "no PII unless you opt in" rule those already follow.
  */
 class UserInstrumentation implements Instrumentation
 {
@@ -35,22 +43,26 @@ class UserInstrumentation implements Instrumentation
 
     public function login(Login $event): void
     {
-        $this->record('login', (string) $event->user->getAuthIdentifier(), $event->guard);
+        $this->record('login', $event->user, $event->guard);
     }
 
     public function logout(Logout $event): void
     {
-        $this->record('logout', $event->user === null ? null : (string) $event->user->getAuthIdentifier(), $event->guard);
+        $this->record('logout', $event->user, $event->guard);
     }
 
-    private function record(string $operation, ?string $userId, ?string $guard): void
+    private function record(string $operation, ?Authenticatable $user, ?string $guard): void
     {
-        Tracer::newSpan("user {$operation}")
+        $span = Tracer::newSpan("user {$operation}")
             ->setAttribute(SpanType::ATTRIBUTE, SpanType::User->value)
             ->setAttribute('isoxen.user.operation', $operation)
-            ->setAttribute('enduser.id', $userId)
-            ->setAttribute('isoxen.user.guard', $guard)
-            ->start()
-            ->end();
+            ->setAttribute('enduser.id', $user === null ? null : (string) $user->getAuthIdentifier())
+            ->setAttribute('isoxen.user.guard', $guard);
+
+        if ($user !== null && config('isoxen.user_context') === true) {
+            $span->setAttributes(OpenTelemetry::collectUserContext($user));
+        }
+
+        $span->start()->end();
     }
 }

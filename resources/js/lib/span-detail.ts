@@ -26,7 +26,10 @@ const DETAIL_ATTRIBUTES: Partial<Record<string, string[]>> = {
     notification: ['notification.class'],
     redis: ['db.query.text'],
     exception: ['exception.message', 'exception.type'],
-    user: ['enduser.id'],
+    // Name/email only appear if the monitored application opted in (see
+    // UserInstrumentation) -- most spans will only have the id, which is
+    // what's checked last.
+    user: ['user.email', 'user.name', 'enduser.id', 'user.id'],
 };
 
 export function spanDetail(entry: {

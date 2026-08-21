@@ -142,6 +142,21 @@ export type EndpointStat = {
 };
 
 /**
+ * Someone currently online, as inferred by `OnlineUsersQuery` from the
+ * Users tab's own login/logout spans -- their most recent event within the
+ * query's window is a login with no logout since. `name`/`email` are only
+ * present if the monitored application opted in (see UserInstrumentation);
+ * `id` (the raw `enduser.id`) is always there as the fallback identity.
+ */
+export type OnlineUser = {
+    id: string;
+    name: string | null;
+    email: string | null;
+    /** ISO-8601 instant of the login event that put them online. */
+    since: string;
+};
+
+/**
  * The project currently being viewed, shared from
  * `HandleInertiaRequests::projectContext()` so the app sidebar can swap its
  * navigation. Absent on every page that isn't scoped to a project.
