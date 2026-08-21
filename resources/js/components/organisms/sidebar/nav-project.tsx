@@ -54,6 +54,15 @@ type CategoryDef = {
      * cache-heavy request emits hundreds of spans.
      */
     enabled: boolean;
+    /**
+     * Whether a non-zero count here is routine volume or something worth
+     * noticing. Exceptions gets `'critical'` so its sidebar badge reads as
+     * an alert -- same red used for an errored request's StatusBadge and a
+     * category's own error pill (see lib/tone.ts) -- rather than blending
+     * in with Requests/Jobs/... counts, which are just traffic. Omitted
+     * (defaults to neutral) for every other category.
+     */
+    tone?: 'critical';
 };
 
 const ACTIVITY: CategoryDef[] = [
@@ -91,6 +100,7 @@ const ACTIVITY: CategoryDef[] = [
         icon: TriangleAlert,
         type: 'exception',
         enabled: true,
+        tone: 'critical',
     },
     {
         slug: 'queries',
@@ -170,7 +180,24 @@ function CategoryItem({
             </SidebarMenuButton>
 
             {count !== undefined && count > 0 && (
-                <SidebarMenuBadge>{count}</SidebarMenuBadge>
+                <SidebarMenuBadge
+                    className={
+                        category.tone === 'critical'
+                            ? // The badge's own base classes already set a
+                              // hover/active text colour (peer-hover/peer-
+                              // data-[active=true], both keyed off the menu
+                              // button next to it) that would otherwise
+                              // paint over this red the moment the row is
+                              // hovered or becomes the active category --
+                              // repeated here so the critical colour wins
+                              // in every one of the button's states, not
+                              // just the resting one.
+                              'bg-[var(--color-tone-critical)]/10 font-semibold text-[var(--color-tone-critical)] peer-hover/menu-button:text-[var(--color-tone-critical)] peer-data-[active=true]/menu-button:text-[var(--color-tone-critical)]'
+                            : undefined
+                    }
+                >
+                    {count}
+                </SidebarMenuBadge>
             )}
         </SidebarMenuItem>
     );
