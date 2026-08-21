@@ -347,11 +347,19 @@ export default function ProjectsTrace({
     );
 }
 
-ProjectsTrace.layout = {
+// A function rather than a plain object: Inertia calls this with the
+// page's own props (see the Inertia persistent-layouts docs), which is the
+// only way to reach `project.name` here -- a static object literal is
+// evaluated once at module load, before any page's props exist.
+ProjectsTrace.layout = (page: { project: Project }) => ({
     breadcrumbs: [
         {
             title: 'Projects',
             href: index(),
         },
+        {
+            title: page.project.name,
+            href: show(page.project.id),
+        },
     ],
-};
+});

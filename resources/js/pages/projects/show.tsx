@@ -17,7 +17,7 @@ import { OnlineUsersPanel } from '@/components/organisms/online-users-panel';
 import { SlowEndpointsTable } from '@/components/organisms/slow-endpoints-table';
 import { StatChartPanel } from '@/components/organisms/stat-chart-panel';
 import { Input } from '@/components/ui/input';
-import { index } from '@/routes/projects';
+import { index, show } from '@/routes/projects';
 import { show as showTrace } from '@/routes/projects/traces';
 import type {
     CategorySummary,
@@ -338,8 +338,6 @@ export default function ProjectsShow({
                 <Head title={project.name} />
 
                 <div className="flex flex-1 flex-col gap-6 p-4">
-                    <Heading title={project.name} description={project.slug} />
-
                     <CategoryHeader label={CATEGORY_LABELS.users} />
 
                     <OnlineUsersPanel users={onlineUsers} />
@@ -375,8 +373,6 @@ export default function ProjectsShow({
             <Head title={project.name} />
 
             <div className="flex flex-1 flex-col gap-6 p-4">
-                <Heading title={project.name} description={project.slug} />
-
                 <CategoryHeader label={CATEGORY_LABELS[activeCategory]} />
 
                 <div className="flex flex-col gap-4 lg:flex-row">
@@ -527,12 +523,21 @@ export default function ProjectsShow({
     );
 }
 
-ProjectsShow.layout = {
+// A function rather than a plain object: Inertia calls this with the
+// page's own props (see the Inertia persistent-layouts docs), which is the
+// only way to reach `project.name` here -- a static object literal is
+// evaluated once at module load, before any page's props exist, so it
+// could never have shown the project's name in the first place.
+ProjectsShow.layout = (page: { project: Project }) => ({
     breadcrumbs: [
         {
             title: 'Projects',
             href: index(),
         },
+        {
+            title: page.project.name,
+            href: show(page.project.id),
+        },
     ],
     actions: <PeriodSelector />,
-};
+});
