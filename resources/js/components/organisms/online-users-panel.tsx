@@ -45,7 +45,7 @@ export function OnlineUsersPanel({ users }: { users: OnlineUser[] }) {
             <div className="flex items-center gap-2 border-b border-sidebar-border/70 px-4 py-3 dark:border-sidebar-border">
                 <span
                     aria-hidden
-                    className="size-2 rounded-full bg-[#1a9d5c] dark:bg-[#22a878]"
+                    className="size-2 rounded-full bg-[var(--color-status-online)]"
                 />
                 <p className="font-medium">
                     {users.length} online{' '}
@@ -73,7 +73,7 @@ export function OnlineUsersPanel({ users }: { users: OnlineUser[] }) {
                             <div className="flex items-center gap-2">
                                 <span
                                     aria-hidden
-                                    className="size-1.5 rounded-full bg-[#1a9d5c] dark:bg-[#22a878]"
+                                    className="size-1.5 rounded-full bg-[var(--color-status-online)]"
                                 />
                                 <span className="font-medium">
                                     {displayName(user)}

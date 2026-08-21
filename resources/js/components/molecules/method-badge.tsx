@@ -1,4 +1,12 @@
-const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
+const HTTP_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'HEAD',
+    'OPTIONS',
+] as const;
 
 type KnownMethod = (typeof HTTP_METHODS)[number];
 
@@ -33,7 +41,10 @@ export function parseHttpMethod(name: string | null): KnownMethod | null {
 }
 
 /** The route portion of a request span's name, once its method is stripped. */
-export function stripHttpMethod(name: string | null, method: string | null): string {
+export function stripHttpMethod(
+    name: string | null,
+    method: string | null,
+): string {
     if (!name) {
         return '—';
     }
@@ -58,13 +69,18 @@ export function stripHttpMethod(name: string | null, method: string | null): str
  * measures a hair under WCAG 3:1 against the light surface (2.1-2.7:1) --
  * its darker sibling clears it. Blue is the one hue where the natural
  * pairing already clears 3:1 both ways, so it's left alone.
+ *
+ * The `-contrast` tokens (app.css) already hold the swapped hue per theme,
+ * so no `dark:text-*` override is needed here -- only the background wash's
+ * opacity still differs (10% light, 15% dark), which the dark-mode opacity
+ * modifier on the background class handles.
  */
 const METHOD_COLORS: Record<ColouredMethod, string> = {
-    GET: 'bg-[#2a78d6]/10 text-[#2a78d6] dark:bg-[#3987e5]/15 dark:text-[#3987e5]',
-    POST: 'bg-[#eb6834]/10 text-[#d95926] dark:bg-[#d95926]/15 dark:text-[#eb6834]',
-    PUT: 'bg-[#1baf7a]/10 text-[#199e70] dark:bg-[#199e70]/15 dark:text-[#1baf7a]',
-    PATCH: 'bg-[#eda100]/10 text-[#c98500] dark:bg-[#c98500]/15 dark:text-[#eda100]',
-    DELETE: 'bg-[#e87ba4]/10 text-[#d55181] dark:bg-[#d55181]/15 dark:text-[#e87ba4]',
+    GET: 'bg-[var(--color-tone-neutral)]/10 text-[var(--color-tone-neutral)] dark:bg-[var(--color-tone-neutral)]/15',
+    POST: 'bg-[var(--color-method-post)]/10 text-[var(--color-method-post-contrast)] dark:bg-[var(--color-method-post)]/15',
+    PUT: 'bg-[var(--color-method-put)]/10 text-[var(--color-method-put-contrast)] dark:bg-[var(--color-method-put)]/15',
+    PATCH: 'bg-[var(--color-tone-warning)]/10 text-[var(--color-tone-warning-contrast)] dark:bg-[var(--color-tone-warning)]/15',
+    DELETE: 'bg-[var(--color-method-delete)]/10 text-[var(--color-method-delete-contrast)] dark:bg-[var(--color-method-delete)]/15',
 };
 
 function isColouredMethod(method: string): method is ColouredMethod {

@@ -101,7 +101,7 @@ export function SlowEndpointsTable({
                                 </td>
                                 <td className="py-2 pr-4 tabular-nums">
                                     {endpoint.errors > 0 ? (
-                                        <span className="text-[#c33c3c] dark:text-[#e66767]">
+                                        <span className="text-[var(--color-tone-critical)]">
                                             {endpoint.errors}
                                         </span>
                                     ) : (

@@ -23,7 +23,7 @@ export function StatusBadge({ code }: { code: number | null }) {
     }
 
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#c33c3c]/10 px-2 py-0.5 font-medium text-[#c33c3c] dark:bg-[#e66767]/15 dark:text-[#e66767]">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-tone-critical)]/10 px-2 py-0.5 font-medium text-[var(--color-tone-critical)] dark:bg-[var(--color-tone-critical)]/15">
             <span aria-hidden className="size-1.5 rounded-full bg-current" />
             {label}
         </span>

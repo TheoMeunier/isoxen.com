@@ -14,9 +14,9 @@ export type Tone = 'neutral' | 'warning' | 'critical';
  * StatusBadge).
  */
 export const TONE_DOT: Record<Tone, string> = {
-    neutral: 'bg-[#2a78d6] dark:bg-[#3987e5]',
-    warning: 'bg-[#eda100] dark:bg-[#c98500]',
-    critical: 'bg-[#c33c3c] dark:bg-[#e66767]',
+    neutral: 'bg-[var(--color-tone-neutral)]',
+    warning: 'bg-[var(--color-tone-warning)]',
+    critical: 'bg-[var(--color-tone-critical)]',
 };
 
 /**
@@ -27,6 +27,6 @@ export const TONE_DOT: Record<Tone, string> = {
  */
 export const TONE_TEXT: Record<Tone, string> = {
     neutral: 'text-foreground',
-    warning: 'text-[#c98500] dark:text-[#eda100]',
-    critical: 'text-[#c33c3c] dark:text-[#e66767]',
+    warning: 'text-[var(--color-tone-warning-contrast)]',
+    critical: 'text-[var(--color-tone-critical)]',
 };

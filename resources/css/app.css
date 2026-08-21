@@ -95,6 +95,40 @@
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
     --sidebar-ring: oklch(0.87 0 0);
+
+    /*
+     * Semantic + categorical colour tokens for observability UI (status
+     * pills, HTTP method badges, span-type dots, the online indicator).
+     * Centralised here -- instead of hardcoded hex in each component -- so
+     * retuning a hue or adjusting dark-mode contrast is a one-line change
+     * in this file rather than a hunt across every badge/chart component.
+     *
+     * Light/dark pairs, and which pairs deliberately swap which member
+     * carries the text vs. the background wash, come from the dataviz
+     * skill's validated 8-slot categorical palette and its CVD/contrast
+     * checks -- see the comments in lib/tone.ts, lib/span-colors.ts and
+     * molecules/method-badge.tsx for the reasoning per colour. The values
+     * below are unchanged from what those files used to hardcode; only
+     * their home moved.
+     */
+    --color-tone-neutral: #2a78d6;
+    --color-tone-warning: #eda100;
+    --color-tone-warning-contrast: #c98500;
+    --color-tone-critical: #c33c3c;
+
+    --color-method-post: #eb6834;
+    --color-method-post-contrast: #d95926;
+    --color-method-put: #1baf7a;
+    --color-method-put-contrast: #199e70;
+    --color-method-delete: #e87ba4;
+    --color-method-delete-contrast: #d55181;
+
+    --color-span-mail: #008300;
+    --color-span-notification: #4a3aa7;
+    --color-span-exception: #e34948;
+    --color-span-other: #8a8a86;
+
+    --color-status-online: #1a9d5c;
 }
 
 .dark {
@@ -130,6 +164,29 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(0.269 0 0);
     --sidebar-ring: oklch(0.439 0 0);
+
+    /* Dark-mode values for the tokens declared in :root above.
+     * `--color-span-mail` has no override here on purpose -- it never had
+     * a dark-mode variant before this refactor either; flagged separately
+     * as a pre-existing gap rather than fixed silently as part of this
+     * pass. */
+    --color-tone-neutral: #3987e5;
+    --color-tone-warning: #c98500;
+    --color-tone-warning-contrast: #eda100;
+    --color-tone-critical: #e66767;
+
+    --color-method-post: #d95926;
+    --color-method-post-contrast: #eb6834;
+    --color-method-put: #199e70;
+    --color-method-put-contrast: #1baf7a;
+    --color-method-delete: #d55181;
+    --color-method-delete-contrast: #e87ba4;
+
+    --color-span-notification: #9085e9;
+    --color-span-exception: #e66767;
+    --color-span-other: #9c9b93;
+
+    --color-status-online: #22a878;
 }
 
 @layer base {

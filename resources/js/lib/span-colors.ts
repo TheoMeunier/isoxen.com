@@ -18,21 +18,22 @@
  * status ring rather than a recolor, so it never collides with a span's
  * category color.
  *
- * Returns Tailwind classes (not raw hex) to match how the rest of this
- * project's charts theme for light/dark -- see activity-chart.tsx.
+ * Returns Tailwind classes referencing the shared colour tokens defined in
+ * app.css (not raw hex) so light/dark theming stays in one place -- see the
+ * comment above those tokens for how each light/dark pair was chosen.
  */
 const SPAN_TYPE_COLORS: Record<string, string> = {
-    request: 'bg-[#2a78d6] dark:bg-[#3987e5]',
-    query: 'bg-[#eb6834] dark:bg-[#d95926]',
-    cache: 'bg-[#1baf7a] dark:bg-[#199e70]',
-    job: 'bg-[#eda100] dark:bg-[#c98500]',
-    outgoing_request: 'bg-[#e87ba4] dark:bg-[#d55181]',
-    mail: 'bg-[#008300]',
-    notification: 'bg-[#4a3aa7] dark:bg-[#9085e9]',
-    exception: 'bg-[#e34948] dark:bg-[#e66767]',
+    request: 'bg-[var(--color-tone-neutral)]',
+    query: 'bg-[var(--color-method-post)]',
+    cache: 'bg-[var(--color-method-put)]',
+    job: 'bg-[var(--color-tone-warning)]',
+    outgoing_request: 'bg-[var(--color-method-delete)]',
+    mail: 'bg-[var(--color-span-mail)]',
+    notification: 'bg-[var(--color-span-notification)]',
+    exception: 'bg-[var(--color-span-exception)]',
 };
 
-const OTHER_COLOR = 'bg-[#8a8a86] dark:bg-[#9c9b93]';
+const OTHER_COLOR = 'bg-[var(--color-span-other)]';
 
 /**
  * Tailwind background classes for a span's category. Used both for the

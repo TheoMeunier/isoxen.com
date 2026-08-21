@@ -101,8 +101,8 @@ export function InformationPanel({ project }: { project: Project }) {
             <div className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
                 <p className="font-medium">Ingestion token</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Configure your app's OpenTelemetry exporter to send data
-                    to this project using this token.
+                    Configure your app's OpenTelemetry exporter to send data to
+                    this project using this token.
                 </p>
 
                 {project.token && (
@@ -126,12 +126,10 @@ export function InformationPanel({ project }: { project: Project }) {
                 )}
             </div>
 
-            <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
+            <div className="space-y-4 rounded-lg border border-destructive/20 bg-destructive/5 p-4">
                 <div>
-                    <p className="font-medium text-red-600 dark:text-red-100">
-                        Danger zone
-                    </p>
-                    <p className="text-sm text-red-600/80 dark:text-red-100/80">
+                    <p className="font-medium text-destructive">Danger zone</p>
+                    <p className="text-sm text-destructive/80">
                         Deleting a project permanently removes it and revokes
                         its ingestion token. This cannot be undone.
                     </p>

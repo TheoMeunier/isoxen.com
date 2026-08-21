@@ -179,7 +179,7 @@ export default function ProjectsTrace({
                         <p
                             className={`mt-1 text-3xl font-semibold tabular-nums ${
                                 errorCount > 0
-                                    ? 'text-[#c33c3c] dark:text-[#e66767]'
+                                    ? 'text-[var(--color-tone-critical)]'
                                     : 'text-foreground'
                             }`}
                         >
@@ -228,7 +228,7 @@ export default function ProjectsTrace({
 
                         <div className="p-4">
                             {selected.status_message && (
-                                <p className="mb-4 rounded-md bg-[#c33c3c]/10 px-3 py-2 text-sm text-[#c33c3c] dark:bg-[#e66767]/15 dark:text-[#e66767]">
+                                <p className="mb-4 rounded-md bg-[var(--color-tone-critical)]/10 px-3 py-2 text-sm text-[var(--color-tone-critical)] dark:bg-[var(--color-tone-critical)]/15">
                                     {selected.status_message}
                                 </p>
                             )}

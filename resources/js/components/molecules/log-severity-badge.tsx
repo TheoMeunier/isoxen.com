@@ -20,11 +20,15 @@ function severityTone(severityNumber: number | null): Tone {
 // Same three hues as tone.ts's TONE_DOT/TONE_TEXT, reassembled into a pill
 // (StatusBadge's shape) rather than imported directly -- StatusBadge
 // hardcodes its own colours the same way, so this keeps the precedent
-// rather than wiring a shared component for two callers.
+// rather than wiring a shared component for two callers. Colours themselves
+// live as tokens in app.css, not hardcoded here.
 const TONE_PILL: Record<Tone, string> = {
-    neutral: 'bg-[#2a78d6]/10 text-[#2a78d6] dark:bg-[#3987e5]/15 dark:text-[#3987e5]',
-    warning: 'bg-[#eda100]/10 text-[#c98500] dark:bg-[#c98500]/15 dark:text-[#eda100]',
-    critical: 'bg-[#c33c3c]/10 text-[#c33c3c] dark:bg-[#e66767]/15 dark:text-[#e66767]',
+    neutral:
+        'bg-[var(--color-tone-neutral)]/10 text-[var(--color-tone-neutral)] dark:bg-[var(--color-tone-neutral)]/15',
+    warning:
+        'bg-[var(--color-tone-warning)]/10 text-[var(--color-tone-warning-contrast)] dark:bg-[var(--color-tone-warning)]/15',
+    critical:
+        'bg-[var(--color-tone-critical)]/10 text-[var(--color-tone-critical)] dark:bg-[var(--color-tone-critical)]/15',
 };
 
 export function LogSeverityBadge({

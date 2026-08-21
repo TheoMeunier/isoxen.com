@@ -169,7 +169,7 @@ export function TraceWaterfall({
                                     <div
                                         className={`absolute top-1/2 h-2 -translate-y-1/2 rounded-sm ${spanTypeColor(row.type)} ${
                                             isError
-                                                ? 'ring-2 ring-[#c33c3c] dark:ring-[#e66767]'
+                                                ? 'ring-2 ring-[var(--color-tone-critical)]'
                                                 : ''
                                         }`}
                                         style={{
