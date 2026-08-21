@@ -3,14 +3,6 @@ const STATUS_CODES: Record<number, string> = {
     1: 'Ok',
     2: 'Error',
 };
-
-/**
- * Status is a reserved colour role, and it always ships with its label —
- * never colour alone, which would be invisible to a colourblind reader.
- *
- * Shared between the category table (projects/show) and a trace's detail
- * page, which both render the same OTEL status codes.
- */
 export function StatusBadge({ code }: { code: number | null }) {
     if (code === null) {
         return <span className="text-muted-foreground">—</span>;

@@ -7,11 +7,11 @@ import { StatusBadge } from '@/components/molecules/status-badge';
 import { TraceWaterfall } from '@/components/organisms/trace-waterfall';
 import { Button } from '@/components/ui/button';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { formatDuration, formatTime } from '@/lib/datetime';
 import { spanDetail } from '@/lib/span-detail';
 import { index, show } from '@/routes/projects';
 import type { TraceLog, TraceSpan } from '@/types/observability';
 import type { Project } from '@/types/project';
-
 const SPAN_KINDS: Record<number, string> = {
     0: 'Unspecified',
     1: 'Internal',
@@ -20,10 +20,6 @@ const SPAN_KINDS: Record<number, string> = {
     4: 'Producer',
     5: 'Consumer',
 };
-
-// Mirrors App\Watch\Ingestion\Support\ObservabilityCategories: the category
-// slug a span's `type` belongs to, so "back to project" can land on the
-// sidebar tab this trace actually came from instead of always Requests.
 const TYPE_TO_CATEGORY: Record<string, string> = {
     request: 'requests',
     job: 'jobs',
@@ -37,27 +33,7 @@ const TYPE_TO_CATEGORY: Record<string, string> = {
     outgoing_request: 'outgoing-requests',
     user: 'users',
 };
-
-function formatTime(value: string): string {
-    const date = new Date(value);
-
-    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-}
-
-function formatDuration(nanos: number | null): string {
-    if (nanos === null) {
-        return '—';
-    }
-
-    return `${(nanos / 1_000_000).toFixed(1)} ms`;
-}
-
-// A pretty-printed object/array past this many lines collapses behind a
-// "Show more" toggle by default -- long enough to show real structure at a
-// glance, short enough that one bulky attribute can't push every other one
-// on the span off screen.
 const COLLAPSED_LINE_COUNT = 6;
-
 function AttributeValue({ value }: { value: unknown }) {
     const [expanded, setExpanded] = useState(false);
 
@@ -70,13 +46,9 @@ function AttributeValue({ value }: { value: unknown }) {
     }
 
     if (typeof value !== 'object') {
-        // number, boolean, ... -- short enough to show inline as-is.
         return <span className="font-mono">{String(value)}</span>;
     }
 
-    // Objects and arrays: indented JSON, not the single-line
-    // `JSON.stringify` this used to render -- a nested object collapsed
-    // onto one line reads as noise past a couple of keys.
     const pretty = JSON.stringify(value, null, 2);
     const lines = pretty.split('\n');
     const isLong = lines.length > COLLAPSED_LINE_COUNT;
@@ -106,7 +78,6 @@ function AttributeValue({ value }: { value: unknown }) {
         </div>
     );
 }
-
 function AttributesList({
     attributes,
 }: {
@@ -135,7 +106,6 @@ function AttributesList({
         </dl>
     );
 }
-
 export default function ProjectsTrace({
     project,
     traceId,
@@ -152,10 +122,8 @@ export default function ProjectsTrace({
     const [selectedSpanId, setSelectedSpanId] = useState<string | null>(
         root?.span_id ?? null,
     );
-
     const selected =
         spans.find((span) => span.span_id === selectedSpanId) ?? root;
-
     const errorCount = spans.filter((span) => span.status_code === 2).length;
     const backCategory = root?.type
         ? (TYPE_TO_CATEGORY[root.type] ?? 'requests')
@@ -346,11 +314,6 @@ export default function ProjectsTrace({
         </>
     );
 }
-
-// A function rather than a plain object: Inertia calls this with the
-// page's own props (see the Inertia persistent-layouts docs), which is the
-// only way to reach `project.name` here -- a static object literal is
-// evaluated once at module load, before any page's props exist.
 ProjectsTrace.layout = (page: { project: Project }) => ({
     breadcrumbs: [
         {

@@ -18,14 +18,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useClipboard } from '@/hooks/use-clipboard';
 import type { Project } from '@/types/project';
-
-/**
- * The Information tab -- project-level settings and actions (rename, copy
- * the ingestion token, delete) that used to sit at the top and bottom of
- * every activity tab. Moved here so Requests/Jobs/... stay focused on
- * telemetry, and so project management has one place to grow into as more
- * actions land (regenerate token, transfer, etc.).
- */
 export function InformationPanel({ project }: { project: Project }) {
     const [copiedText, copy] = useClipboard();
     const [isEditOpen, setIsEditOpen] = useState(false);

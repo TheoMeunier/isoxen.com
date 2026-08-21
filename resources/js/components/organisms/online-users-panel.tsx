@@ -1,5 +1,4 @@
 import type { OnlineUser } from '@/types/observability';
-
 function formatSince(value: string): string {
     const date = new Date(value);
 
@@ -9,7 +8,7 @@ function formatSince(value: string): string {
 
     const minutes = Math.max(
         0,
-        Math.round((Date.now() - date.getTime()) / 60_000),
+        Math.round((Date.now() - date.getTime()) / 60000),
     );
 
     if (minutes < 1) {
@@ -24,21 +23,9 @@ function formatSince(value: string): string {
 
     return hours < 24 ? `${hours}h ago` : date.toLocaleString();
 }
-
-// Name/email only show up here once the monitored application opts in via
-// `OpenTelemetry::user(...)` (see UserInstrumentation) -- until then every
-// row falls back to the raw enduser.id, which is always present.
 function displayName(user: OnlineUser): string {
     return user.name ?? user.email ?? user.id;
 }
-
-/**
- * Who's currently connected -- inferred from login/logout events, not a
- * real session check (see OnlineUsersQuery). The page polls this prop on an
- * interval (see show.tsx) rather than pushing updates: the app has no
- * WebSocket server configured yet, so this is the lightest way to keep the
- * list current without standing up one.
- */
 export function OnlineUsersPanel({ users }: { users: OnlineUser[] }) {
     return (
         <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">

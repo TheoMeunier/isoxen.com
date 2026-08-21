@@ -17,6 +17,7 @@ import { OnlineUsersPanel } from '@/components/organisms/online-users-panel';
 import { SlowEndpointsTable } from '@/components/organisms/slow-endpoints-table';
 import { StatChartPanel } from '@/components/organisms/stat-chart-panel';
 import { Input } from '@/components/ui/input';
+import { formatDuration, formatTime } from '@/lib/datetime';
 import { index, show } from '@/routes/projects';
 import { show as showTrace } from '@/routes/projects/traces';
 import type {
@@ -34,17 +35,8 @@ import type {
     TimelinePoint,
 } from '@/types/observability';
 import type { Project } from '@/types/project';
-
-// How often the Users tab asks the server for a fresh `onlineUsers` --
-// there's no WebSocket server running yet (see OnlineUsersPanel), so this
-// is the lightest way to keep that list current.
-const ONLINE_USERS_POLL_MS = 12_000;
-
-// The Information tab shares this page and route (`?category=information`)
-// but isn't an observability category -- it has no telemetry behind it, so
-// it doesn't belong in `ObservabilityCategory` (see ShowProjectController).
+const ONLINE_USERS_POLL_MS = 12000;
 type ActiveTab = ObservabilityCategory | 'information';
-
 const SPAN_KINDS: Record<number, string> = {
     0: 'Unspecified',
     1: 'Internal',
@@ -53,16 +45,8 @@ const SPAN_KINDS: Record<number, string> = {
     4: 'Producer',
     5: 'Consumer',
 };
-
-// Categories whose entries don't come from `otel_spans` -- everything else
-// (Requests, Jobs, Queries, Exceptions, ...) is a span filtered by `type`
-// and rendered with the same generic table for now. Mirrors
-// App\Watch\Ingestion\Support\ObservabilityCategories.
 const LOGS_CATEGORY: ObservabilityCategory = 'logs';
 const METRICS_CATEGORY: ObservabilityCategory = 'metrics';
-
-// Labels for the panel heading. The sidebar owns the same labels for its
-// own links (components/organisms/sidebar/nav-project.tsx).
 const CATEGORY_LABELS: Record<ObservabilityCategory, string> = {
     requests: 'Requests',
     jobs: 'Jobs',
@@ -78,26 +62,6 @@ const CATEGORY_LABELS: Record<ObservabilityCategory, string> = {
     users: 'Users',
     logs: 'Logs',
 };
-
-function formatTime(value: string): string {
-    // NOTE: `value` comes straight from the database column as a raw
-    // string (these rows are plain query-builder results, not cast Eloquent
-    // attributes). This hasn't been checked against the actual Postgres
-    // driver output yet -- verify this renders correctly once real data
-    // flows through, and adjust the parsing here if needed.
-    const date = new Date(value);
-
-    return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-}
-
-function formatDuration(nanos: number | null): string {
-    if (nanos === null) {
-        return '—';
-    }
-
-    return `${(nanos / 1_000_000).toFixed(1)} ms`;
-}
-
 function EmptyState({ message }: { message: string }) {
     return (
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-sidebar-border/70 py-16 text-center dark:border-sidebar-border">
@@ -106,7 +70,6 @@ function EmptyState({ message }: { message: string }) {
         </div>
     );
 }
-
 function SpansTable({
     entries,
     projectId,
@@ -114,10 +77,6 @@ function SpansTable({
 }: {
     entries: SpanEntry[];
     projectId: number;
-    // Only the Requests category's span names follow the "{METHOD} {route}"
-    // convention -- every other category's `name` is something else
-    // entirely (a SQL query, a job class, ...), so the Method column only
-    // makes sense here.
     showMethod: boolean;
 }) {
     return (
@@ -139,16 +98,10 @@ function SpansTable({
                     const method = showMethod
                         ? parseHttpMethod(entry.name)
                         : null;
-                    // `detail` stands in for `name` on the categories where
-                    // the name alone isn't informative (the SQL text for
-                    // Queries, the full URL for Outgoing Requests) -- see
-                    // SpanEntry. Shown monospaced and truncated with the
-                    // full value on hover, since both can run long.
                     const isDetailed = !showMethod && entry.detail != null;
                     const name = showMethod
                         ? stripHttpMethod(entry.name, method)
                         : (entry.detail ?? entry.name ?? '—');
-
                     const nameContent = isDetailed ? (
                         <span
                             className="block max-w-[42rem] truncate font-mono text-xs"
@@ -206,7 +159,6 @@ function SpansTable({
         </table>
     );
 }
-
 function MetricsTable({ entries }: { entries: MetricEntry[] }) {
     return (
         <table className="w-full text-left text-sm">
@@ -239,7 +191,6 @@ function MetricsTable({ entries }: { entries: MetricEntry[] }) {
         </table>
     );
 }
-
 function LogsTable({ entries }: { entries: LogEntry[] }) {
     return (
         <table className="w-full text-left text-sm">
@@ -269,10 +220,8 @@ function LogsTable({ entries }: { entries: LogEntry[] }) {
         </table>
     );
 }
-
 type Entries =
     Paginated<SpanEntry> | Paginated<MetricEntry> | Paginated<LogEntry>;
-
 export default function ProjectsShow({
     project,
     activeCategory,
@@ -297,11 +246,6 @@ export default function ProjectsShow({
     onlineUsers: OnlineUser[];
 }) {
     const [search, setSearch] = useState('');
-
-    // Only the Users tab needs a live view -- everywhere else this is a
-    // no-op interval that's immediately cleared. Requesting `onlineUsers`
-    // alone (a partial reload) skips every other query on the server; see
-    // ShowProjectController.
     useEffect(() => {
         if (activeCategory !== 'users') {
             return;
@@ -328,10 +272,6 @@ export default function ProjectsShow({
         );
     }
 
-    // The Users tab shows who's connected right now, not a historical log
-    // -- a different enough job that it gets its own layout rather than
-    // squeezing into the stat-panels-plus-table one every other category
-    // shares.
     if (activeCategory === 'users') {
         return (
             <>
@@ -346,10 +286,6 @@ export default function ProjectsShow({
         );
     }
 
-    // Filters the page of entries already loaded -- not a server-side
-    // search across every entry the category has ever received. Good
-    // enough to scan what's on screen; a real search needs a backend query,
-    // which is a separate piece of work from this layout pass.
     const searchedEntries = entries.data.filter((entry) => {
         if (!search.trim()) {
             return true;
@@ -364,7 +300,6 @@ export default function ProjectsShow({
 
         return haystack.toLowerCase().includes(search.trim().toLowerCase());
     });
-
     const hasDuration =
         activeCategory !== LOGS_CATEGORY && activeCategory !== METRICS_CATEGORY;
 
@@ -385,10 +320,6 @@ export default function ProjectsShow({
                             tone: segment.tone,
                         }))}
                         points={
-                            // Metrics has no status breakdown to colour bars
-                            // by (see ShowProjectController), so it falls
-                            // back to a single neutral segment per hour --
-                            // still a bar chart, just uncoloured.
                             statusTimeline.length > 0
                                 ? statusTimeline
                                 : timeline.map((point) => ({
@@ -522,12 +453,6 @@ export default function ProjectsShow({
         </>
     );
 }
-
-// A function rather than a plain object: Inertia calls this with the
-// page's own props (see the Inertia persistent-layouts docs), which is the
-// only way to reach `project.name` here -- a static object literal is
-// evaluated once at module load, before any page's props exist, so it
-// could never have shown the project's name in the first place.
 ProjectsShow.layout = (page: { project: Project }) => ({
     breadcrumbs: [
         {

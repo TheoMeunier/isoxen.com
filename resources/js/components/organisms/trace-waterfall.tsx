@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
+import { formatDuration } from '@/lib/datetime';
 import { spanTypeColor } from '@/lib/span-colors';
 import { spanDetail } from '@/lib/span-detail';
 import type { TraceSpan } from '@/types/observability';
-
 const SPAN_KINDS: Record<number, string> = {
     0: 'Unspecified',
     1: 'Internal',
@@ -11,19 +11,10 @@ const SPAN_KINDS: Record<number, string> = {
     4: 'Producer',
     5: 'Consumer',
 };
-
-type Node = TraceSpan & { children: Node[]; depth: number };
-
-/**
- * Nests spans under their parent and flattens back into a list, depth-first
- * and in the order they started -- the shape a waterfall reads top to
- * bottom.
- *
- * A span whose `parent_span_id` isn't any other span in this trace (either
- * it's genuinely the root, or its parent fell outside a sampled/truncated
- * trace) is treated as top-level rather than dropped: every span the query
- * fetched must show up somewhere.
- */
+type Node = TraceSpan & {
+    children: Node[];
+    depth: number;
+};
 function buildRows(spans: TraceSpan[]): Node[] {
     const byId = new Map<string, Node>();
 
@@ -53,28 +44,15 @@ function buildRows(spans: TraceSpan[]): Node[] {
     }
 
     const rows: Node[] = [];
-
     function visit(node: Node, depth: number): void {
         node.depth = depth;
         rows.push(node);
         node.children.forEach((child) => visit(child, depth + 1));
     }
-
     roots.forEach((root) => visit(root, 0));
 
     return rows;
 }
-
-function formatDuration(nanos: number | null): string {
-    if (nanos === null) {
-        return '—';
-    }
-
-    const ms = nanos / 1_000_000;
-
-    return ms < 1 ? `${ms.toFixed(2)} ms` : `${ms.toFixed(1)} ms`;
-}
-
 export function TraceWaterfall({
     spans,
     selectedSpanId,
@@ -85,22 +63,19 @@ export function TraceWaterfall({
     onSelectSpan: (spanId: string) => void;
 }) {
     const rows = useMemo(() => buildRows(spans), [spans]);
-
     const traceStart = Math.min(
         ...spans.map((span) => new Date(span.time).getTime()),
     );
     const traceEnd = Math.max(
         ...spans.map((span) => new Date(span.end_time ?? span.time).getTime()),
     );
-    // A trace that's all zero-duration spans (or one span) would otherwise
-    // divide by zero; every bar just renders at the far left instead.
     const totalMs = Math.max(traceEnd - traceStart, 1);
 
     return (
         <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
             <div className="flex items-center justify-between border-b border-sidebar-border/70 px-4 py-3 text-xs text-muted-foreground dark:border-sidebar-border">
                 <span>0 ms</span>
-                <span>{formatDuration(totalMs * 1_000_000)} total</span>
+                <span>{formatDuration(totalMs * 1000000)} total</span>
             </div>
 
             <div className="divide-y divide-sidebar-border/40 dark:divide-sidebar-border/60">
@@ -109,27 +84,16 @@ export function TraceWaterfall({
                         ? new Date(row.time).getTime() - traceStart
                         : 0;
                     const durationMs = row.duration_nanos
-                        ? row.duration_nanos / 1_000_000
+                        ? row.duration_nanos / 1000000
                         : 0;
-
                     const leftPercent = Math.min(
                         (startMs / totalMs) * 100,
                         100,
                     );
-                    // A span's own recorded `duration_nanos` (measured by
-                    // the instrumented app) and `totalMs` (derived here from
-                    // every span's start/end timestamp) don't always agree
-                    // to the nanosecond -- a span can end up very slightly
-                    // "longer" than the trace window it's plotted against.
-                    // Uncapped, that pushed the bar past its column and
-                    // over the duration label next to it. Capped to what's
-                    // left of the row after `leftPercent`, so the bar can
-                    // never render past 100%.
                     const widthPercent = Math.min(
                         Math.max((durationMs / totalMs) * 100, 0.5),
                         100 - leftPercent,
                     );
-
                     const isError = row.status_code === 2;
                     const isSelected = row.span_id === selectedSpanId;
                     const detail = spanDetail(row);
@@ -141,9 +105,7 @@ export function TraceWaterfall({
                             onClick={() =>
                                 row.span_id && onSelectSpan(row.span_id)
                             }
-                            className={`grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-4 px-4 py-2 text-left text-sm transition-colors hover:bg-muted/40 ${
-                                isSelected ? 'bg-muted/60' : ''
-                            }`}
+                            className={`grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-4 px-4 py-2 text-left text-sm transition-colors hover:bg-muted/40 ${isSelected ? 'bg-muted/60' : ''}`}
                         >
                             <div
                                 className="flex min-w-0 items-center gap-2"

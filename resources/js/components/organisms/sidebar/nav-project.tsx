@@ -30,41 +30,14 @@ import type {
     CurrentProject,
     ObservabilityCategory,
 } from '@/types/observability';
-
 type CategoryDef = {
     slug: ObservabilityCategory;
     label: string;
     icon: LucideIcon;
-    /**
-     * The span `type` this category filters on, used to read its count.
-     * Absent for categories that don't read from `otel_spans` at all
-     * (Metrics and Logs live in their own tables).
-     */
     type?: string;
-    /**
-     * Whether this category is wired to real data yet.
-     *
-     * All of them now are: the client grew instrumentation for commands,
-     * the scheduler, mail, notifications, cache and users. The flag stays
-     * because new categories land here disabled before their sensor ships.
-     * Mirrors `App\Watch\Ingestion\Support\ObservabilityCategories::all()`.
-     *
-     * Note that an enabled category can still be legitimately empty — Cache
-     * is off by default in the client (ISOXEN_SENSOR_CACHE), because a
-     * cache-heavy request emits hundreds of spans.
-     */
     enabled: boolean;
-    /**
-     * Whether a non-zero count here is routine volume or something worth
-     * noticing. Exceptions gets `'critical'` so its sidebar badge reads as
-     * an alert -- same red used for an errored request's StatusBadge and a
-     * category's own error pill (see lib/tone.ts) -- rather than blending
-     * in with Requests/Jobs/... counts, which are just traffic. Omitted
-     * (defaults to neutral) for every other category.
-     */
     tone?: 'critical';
 };
-
 const ACTIVITY: CategoryDef[] = [
     {
         slug: 'requests',
@@ -127,12 +100,10 @@ const ACTIVITY: CategoryDef[] = [
     },
     { slug: 'metrics', label: 'Metrics', icon: BarChart3, enabled: true },
 ];
-
 const MONITORING: CategoryDef[] = [
     { slug: 'users', label: 'Users', icon: Users, type: 'user', enabled: true },
     { slug: 'logs', label: 'Logs', icon: ScrollText, enabled: true },
 ];
-
 function CategoryItem({
     category,
     projectId,
@@ -183,16 +154,7 @@ function CategoryItem({
                 <SidebarMenuBadge
                     className={
                         category.tone === 'critical'
-                            ? // The badge's own base classes already set a
-                              // hover/active text colour (peer-hover/peer-
-                              // data-[active=true], both keyed off the menu
-                              // button next to it) that would otherwise
-                              // paint over this red the moment the row is
-                              // hovered or becomes the active category --
-                              // repeated here so the critical colour wins
-                              // in every one of the button's states, not
-                              // just the resting one.
-                              'bg-[var(--color-tone-critical)]/10 font-semibold text-[var(--color-tone-critical)] peer-hover/menu-button:text-[var(--color-tone-critical)] peer-data-[active=true]/menu-button:text-[var(--color-tone-critical)]'
+                            ? 'bg-[var(--color-tone-critical)]/10 font-semibold text-[var(--color-tone-critical)] peer-hover/menu-button:text-[var(--color-tone-critical)] peer-data-[active=true]/menu-button:text-[var(--color-tone-critical)]'
                             : undefined
                     }
                 >
@@ -202,7 +164,6 @@ function CategoryItem({
         </SidebarMenuItem>
     );
 }
-
 function CategoryGroup({
     label,
     categories,
@@ -235,11 +196,6 @@ function CategoryGroup({
         </SidebarGroup>
     );
 }
-
-/**
- * The app sidebar's contents while a project is open: a way back to the
- * project list, then that project's observability categories.
- */
 export function NavProject({
     project,
     active,

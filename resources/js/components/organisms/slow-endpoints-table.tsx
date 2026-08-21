@@ -1,10 +1,12 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { formatDurationMs } from '@/lib/datetime';
 import type { EndpointStat } from '@/types/observability';
-
 type SortKey = Exclude<keyof EndpointStat, 'name'>;
-
-const COLUMNS: { key: SortKey; label: string }[] = [
+const COLUMNS: {
+    key: SortKey;
+    label: string;
+}[] = [
     { key: 'total', label: 'Requests' },
     { key: 'errors', label: 'Errors' },
     { key: 'avg_ms', label: 'Avg' },
@@ -12,18 +14,6 @@ const COLUMNS: { key: SortKey; label: string }[] = [
     { key: 'p95_ms', label: 'p95' },
     { key: 'p99_ms', label: 'p99' },
 ];
-
-function formatMs(ms: number): string {
-    return ms < 1 ? `${ms.toFixed(2)} ms` : `${ms.toFixed(1)} ms`;
-}
-
-/**
- * Every endpoint the Requests category has seen recently, ranked by how
- * slow it is rather than how recently it fired -- the question a plain
- * "most recent requests" table can't answer without reading every row by
- * eye. Sorted by p95 by default, since a handful of slow outliers would
- * otherwise hide behind a healthy average.
- */
 export function SlowEndpointsTable({
     endpoints,
 }: {
@@ -31,13 +21,11 @@ export function SlowEndpointsTable({
 }) {
     const [sortKey, setSortKey] = useState<SortKey>('p95_ms');
     const [sortDesc, setSortDesc] = useState(true);
-
     const sorted = useMemo(() => {
         return [...endpoints].sort((a, b) =>
             sortDesc ? b[sortKey] - a[sortKey] : a[sortKey] - b[sortKey],
         );
     }, [endpoints, sortKey, sortDesc]);
-
     function toggleSort(key: SortKey) {
         if (key === sortKey) {
             setSortDesc((desc) => !desc);
@@ -111,16 +99,16 @@ export function SlowEndpointsTable({
                                     )}
                                 </td>
                                 <td className="py-2 pr-4 text-muted-foreground tabular-nums">
-                                    {formatMs(endpoint.avg_ms)}
+                                    {formatDurationMs(endpoint.avg_ms)}
                                 </td>
                                 <td className="py-2 pr-4 text-muted-foreground tabular-nums">
-                                    {formatMs(endpoint.p50_ms)}
+                                    {formatDurationMs(endpoint.p50_ms)}
                                 </td>
                                 <td className="py-2 pr-4 tabular-nums">
-                                    {formatMs(endpoint.p95_ms)}
+                                    {formatDurationMs(endpoint.p95_ms)}
                                 </td>
                                 <td className="py-2 pr-4 text-muted-foreground tabular-nums">
-                                    {formatMs(endpoint.p99_ms)}
+                                    {formatDurationMs(endpoint.p99_ms)}
                                 </td>
                             </tr>
                         ))}

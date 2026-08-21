@@ -1,10 +1,5 @@
 import type { Tone } from '@/lib/tone';
 import type { LogEntry } from '@/types/observability';
-
-// Mirrors LogSeverityBreakdownQuery's thresholds -- the OTEL severity_number
-// convention (<13 info/debug/trace, 13-16 warning, >=17 error) already used
-// for the pills and bar chart above this table. Keeping the same thresholds
-// here means a row's badge always agrees with that summary.
 function severityTone(severityNumber: number | null): Tone {
     if (severityNumber !== null && severityNumber >= 17) {
         return 'critical';
@@ -16,12 +11,6 @@ function severityTone(severityNumber: number | null): Tone {
 
     return 'neutral';
 }
-
-// Same three hues as tone.ts's TONE_DOT/TONE_TEXT, reassembled into a pill
-// (StatusBadge's shape) rather than imported directly -- StatusBadge
-// hardcodes its own colours the same way, so this keeps the precedent
-// rather than wiring a shared component for two callers. Colours themselves
-// live as tokens in app.css, not hardcoded here.
 const TONE_PILL: Record<Tone, string> = {
     neutral:
         'bg-[var(--color-tone-neutral)]/10 text-[var(--color-tone-neutral)] dark:bg-[var(--color-tone-neutral)]/15',
@@ -30,7 +19,6 @@ const TONE_PILL: Record<Tone, string> = {
     critical:
         'bg-[var(--color-tone-critical)]/10 text-[var(--color-tone-critical)] dark:bg-[var(--color-tone-critical)]/15',
 };
-
 export function LogSeverityBadge({
     entry,
 }: {
