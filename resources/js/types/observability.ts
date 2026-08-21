@@ -16,6 +16,15 @@ export type SpanEntry = {
     status_code: number | null;
     trace_id: string | null;
     span_id: string | null;
+    /**
+     * A more informative stand-in for `name`, only present for categories
+     * where the span's own name is too generic to be useful on its own --
+     * the SQL text for Queries ("SELECT" alone doesn't say much), the full
+     * target URL for Outgoing Requests, the key for Cache ("cache hit"
+     * alone doesn't say *which* key). Absent (not just null) for every
+     * other category (see RecentSpansQuery::withDetail()).
+     */
+    detail?: string | null;
 };
 
 export type MetricEntry = {

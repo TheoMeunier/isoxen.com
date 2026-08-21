@@ -135,9 +135,26 @@ function SpansTable({
                     const method = showMethod
                         ? parseHttpMethod(entry.name)
                         : null;
+                    // `detail` stands in for `name` on the categories where
+                    // the name alone isn't informative (the SQL text for
+                    // Queries, the full URL for Outgoing Requests) -- see
+                    // SpanEntry. Shown monospaced and truncated with the
+                    // full value on hover, since both can run long.
+                    const isDetailed = !showMethod && entry.detail != null;
                     const name = showMethod
                         ? stripHttpMethod(entry.name, method)
-                        : (entry.name ?? '—');
+                        : (entry.detail ?? entry.name ?? '—');
+
+                    const nameContent = isDetailed ? (
+                        <span
+                            className="block max-w-[42rem] truncate font-mono text-xs"
+                            title={name}
+                        >
+                            {name}
+                        </span>
+                    ) : (
+                        name
+                    );
 
                     return (
                         <tr
@@ -161,10 +178,10 @@ function SpansTable({
                                         })}
                                         className="hover:underline"
                                     >
-                                        {name}
+                                        {nameContent}
                                     </Link>
                                 ) : (
-                                    name
+                                    nameContent
                                 )}
                             </td>
                             <td className="py-2 pr-4">
@@ -336,8 +353,11 @@ export default function ProjectsShow({
             return true;
         }
 
-        const haystack =
-            'body' in entry ? (entry.body ?? '') : (entry.name ?? '');
+        const haystack = 'body' in entry
+            ? (entry.body ?? '')
+            : (('detail' in entry ? entry.detail : null) ??
+                  entry.name ??
+                  '');
 
         return haystack.toLowerCase().includes(search.trim().toLowerCase());
     });

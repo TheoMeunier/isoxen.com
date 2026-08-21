@@ -48,6 +48,90 @@ test('switching category filters spans by their type', function () {
             ->where('entries.data.0.name', 'select * from orders'));
 });
 
+test('the queries category exposes the full SQL as detail', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+
+    DB::table('otel_spans')->insert([
+        'project_id' => $project->id,
+        'trace_id'   => '5b8aa5a2d2c872e8321cf37308d69df2',
+        'span_id'    => '051581bf3cb55c13',
+        'name'       => 'SELECT',
+        'type'       => 'query',
+        'time'       => now(),
+        'attributes' => json_encode([
+            'db.query.text' => 'select * from `orders` where `id` = ?',
+        ]),
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('projects.show', [$project, 'category' => 'queries']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('entries.data.0.name', 'SELECT')
+            ->where('entries.data.0.detail', 'select * from `orders` where `id` = ?'));
+});
+
+test('the outgoing requests category exposes the full URL as detail', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+
+    DB::table('otel_spans')->insert([
+        'project_id' => $project->id,
+        'trace_id'   => '5b8aa5a2d2c872e8321cf37308d69df2',
+        'span_id'    => '051581bf3cb55c13',
+        'name'       => 'GET',
+        'type'       => 'outgoing_request',
+        'time'       => now(),
+        'attributes' => json_encode([
+            'http.request.method' => 'GET',
+            'url.full'            => 'https://api.stripe.com/v1/charges?limit=10',
+        ]),
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('projects.show', [$project, 'category' => 'outgoing-requests']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('entries.data.0.detail', 'GET https://api.stripe.com/v1/charges?limit=10'));
+});
+
+test('the cache category exposes the operation and key as detail', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+
+    DB::table('otel_spans')->insert([
+        'project_id' => $project->id,
+        'trace_id'   => '5b8aa5a2d2c872e8321cf37308d69df2',
+        'span_id'    => '051581bf3cb55c13',
+        'name'       => 'cache hit',
+        'type'       => 'cache',
+        'time'       => now(),
+        'attributes' => json_encode([
+            'cache.operation' => 'hit',
+            'cache.key'       => 'orders:by-customer:42',
+        ]),
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('projects.show', [$project, 'category' => 'cache']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('entries.data.0.name', 'cache hit')
+            ->where('entries.data.0.detail', 'hit orders:by-customer:42'));
+});
+
+test('other categories never expose a detail field', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    makeSpan($project->id, 'request', 'GET /orders');
+
+    $this->actingAs($user)
+        ->get(route('projects.show', $project))
+        ->assertInertia(fn (Assert $page) => $page
+            ->missing('entries.data.0.detail'));
+});
+
 test('an unknown category falls back to requests', function () {
     $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();
