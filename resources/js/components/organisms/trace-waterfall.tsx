@@ -116,9 +116,18 @@ export function TraceWaterfall({
                         (startMs / totalMs) * 100,
                         100,
                     );
-                    const widthPercent = Math.max(
-                        (durationMs / totalMs) * 100,
-                        0.5,
+                    // A span's own recorded `duration_nanos` (measured by
+                    // the instrumented app) and `totalMs` (derived here from
+                    // every span's start/end timestamp) don't always agree
+                    // to the nanosecond -- a span can end up very slightly
+                    // "longer" than the trace window it's plotted against.
+                    // Uncapped, that pushed the bar past its column and
+                    // over the duration label next to it. Capped to what's
+                    // left of the row after `leftPercent`, so the bar can
+                    // never render past 100%.
+                    const widthPercent = Math.min(
+                        Math.max((durationMs / totalMs) * 100, 0.5),
+                        100 - leftPercent,
                     );
 
                     const isError = row.status_code === 2;
@@ -165,7 +174,7 @@ export function TraceWaterfall({
                             </div>
 
                             <div className="flex min-w-0 items-center gap-2">
-                                <div className="relative h-4 flex-1">
+                                <div className="relative h-4 flex-1 overflow-hidden">
                                     <div
                                         className={`absolute top-1/2 h-2 -translate-y-1/2 rounded-sm ${spanTypeColor(row.type)} ${
                                             isError
