@@ -52,6 +52,61 @@ function formatDuration(nanos: number | null): string {
     return `${(nanos / 1_000_000).toFixed(1)} ms`;
 }
 
+// A pretty-printed object/array past this many lines collapses behind a
+// "Show more" toggle by default -- long enough to show real structure at a
+// glance, short enough that one bulky attribute can't push every other one
+// on the span off screen.
+const COLLAPSED_LINE_COUNT = 6;
+
+function AttributeValue({ value }: { value: unknown }) {
+    const [expanded, setExpanded] = useState(false);
+
+    if (value === null || value === undefined) {
+        return <span className="text-muted-foreground">—</span>;
+    }
+
+    if (typeof value === 'string') {
+        return <span className="break-words">{value}</span>;
+    }
+
+    if (typeof value !== 'object') {
+        // number, boolean, ... -- short enough to show inline as-is.
+        return <span className="font-mono">{String(value)}</span>;
+    }
+
+    // Objects and arrays: indented JSON, not the single-line
+    // `JSON.stringify` this used to render -- a nested object collapsed
+    // onto one line reads as noise past a couple of keys.
+    const pretty = JSON.stringify(value, null, 2);
+    const lines = pretty.split('\n');
+    const isLong = lines.length > COLLAPSED_LINE_COUNT;
+    const shown =
+        expanded || !isLong
+            ? pretty
+            : lines.slice(0, COLLAPSED_LINE_COUNT).join('\n');
+
+    return (
+        <div className="min-w-0">
+            <pre className="overflow-x-auto rounded-md bg-muted px-2 py-1.5 font-mono text-xs whitespace-pre-wrap">
+                {shown}
+                {!expanded && isLong && '\n…'}
+            </pre>
+
+            {isLong && (
+                <button
+                    type="button"
+                    onClick={() => setExpanded((current) => !current)}
+                    className="mt-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                    {expanded
+                        ? 'Show less'
+                        : `Show more (${lines.length - COLLAPSED_LINE_COUNT} more lines)`}
+                </button>
+            )}
+        </div>
+    );
+}
+
 function AttributesList({
     attributes,
 }: {
@@ -73,9 +128,7 @@ function AttributesList({
                         {key}
                     </dt>
                     <dd className="min-w-0 break-words">
-                        {typeof value === 'string'
-                            ? value
-                            : JSON.stringify(value)}
+                        <AttributeValue value={value} />
                     </dd>
                 </div>
             ))}
