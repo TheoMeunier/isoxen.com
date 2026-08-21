@@ -1,3 +1,18 @@
+/**
+ * One entry of a Laravel paginator's `links` array: the "Previous" link,
+ * one per page number in the current window, an unclickable `"..."` where
+ * the window skips pages, and the "Next" link -- in that order. Laravel's
+ * `UrlWindow` already decides which page numbers to show and where the
+ * ellipses go (see `LengthAwarePaginator::toArray()`), so the frontend
+ * doesn't need to reimplement that windowing -- see
+ * molecules/pager-links.tsx, which renders this array almost as-is.
+ */
+export type PaginatorLinkItem = {
+    url: string | null;
+    label: string;
+    active: boolean;
+};
+
 export type Paginated<T> = {
     data: T[];
     current_page: number;
@@ -5,6 +20,16 @@ export type Paginated<T> = {
     prev_page_url: string | null;
     next_page_url: string | null;
     total: number;
+    /**
+     * 1-based index of the first/last item on this page, or `null` for
+     * both when `total` is 0. Already present on every standard Laravel
+     * paginator response (`LengthAwarePaginator::toArray()`); listed here
+     * so the frontend can show "Showing X-Y of Z" without recomputing it
+     * from `per_page` -- see molecules/pager-links.tsx.
+     */
+    from: number | null;
+    to: number | null;
+    links: PaginatorLinkItem[];
 };
 
 export type SpanEntry = {

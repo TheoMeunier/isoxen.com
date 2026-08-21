@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import Heading from '@/components/heading';
 import { CategoryHeader } from '@/components/molecules/category-header';
 import { LogSeverityBadge } from '@/components/molecules/log-severity-badge';
-import { MethodBadge, parseHttpMethod, stripHttpMethod } from '@/components/molecules/method-badge';
+import {
+    MethodBadge,
+    parseHttpMethod,
+    stripHttpMethod,
+} from '@/components/molecules/method-badge';
 import { PagerLinks } from '@/components/molecules/pager-links';
 import { PeriodSelector } from '@/components/molecules/period-selector';
 import { StatusBadge } from '@/components/molecules/status-badge';
@@ -353,9 +357,10 @@ export default function ProjectsShow({
             return true;
         }
 
-        const haystack = 'body' in entry
-            ? (entry.body ?? '')
-            : (('detail' in entry ? entry.detail : null) ??
+        const haystack =
+            'body' in entry
+                ? (entry.body ?? '')
+                : (('detail' in entry ? entry.detail : null) ??
                   entry.name ??
                   '');
 
@@ -508,8 +513,10 @@ export default function ProjectsShow({
                                     )}
 
                                 <PagerLinks
-                                    prevPageUrl={entries.prev_page_url}
-                                    nextPageUrl={entries.next_page_url}
+                                    meta={entries}
+                                    itemLabel={CATEGORY_LABELS[
+                                        activeCategory
+                                    ].toLowerCase()}
                                 />
                             </div>
                         )}
