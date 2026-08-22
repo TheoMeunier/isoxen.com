@@ -213,7 +213,7 @@ class QueueInstrumentation implements Instrumentation
     protected function finishActiveJobSpan(?Throwable $exception = null): void
     {
         $scope = Tracer::activeScope();
-        $span = Tracer::activeSpan();
+        $span  = Tracer::activeSpan();
 
         if ($exception !== null) {
             $span->recordException($exception)

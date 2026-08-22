@@ -18,7 +18,7 @@ class RecentSpansQuery
      *
      * @var list<string>
      */
-    private const DETAILED_TYPES = ['query', 'outgoing_request', 'cache'];
+    private const array DETAILED_TYPES = ['query', 'outgoing_request', 'cache'];
 
     public function execute(Project $project, ?string $type = null, int $perPage = 25): LengthAwarePaginator
     {

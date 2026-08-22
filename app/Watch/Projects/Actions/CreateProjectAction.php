@@ -10,7 +10,7 @@ use App\Watch\Projects\Models\Project;
 class CreateProjectAction
 {
     /**
-     * @param array{name: string} $payload
+     * @param  array{name: string}  $payload
      */
     public function execute(User $user, array $payload): Project
     {

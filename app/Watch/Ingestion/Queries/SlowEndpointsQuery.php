@@ -16,7 +16,7 @@ class SlowEndpointsQuery
      */
     public function execute(Project $project, int $hours = 24, int $limit = 20): Collection
     {
-        $since = Carbon::now()->subHours($hours);
+        $since = \Illuminate\Support\Facades\Date::now()->subHours($hours);
 
         $endpoints = DB::table('otel_spans')
             ->where('project_id', $project->id)
@@ -32,13 +32,13 @@ class SlowEndpointsQuery
 
         return $endpoints
             ->map(function (object $endpoint) use ($project, $since): object {
-                $total = (int)$endpoint->total;
+                $total = (int) $endpoint->total;
 
-                return (object)[
-                    'name' => $endpoint->name,
-                    'total' => $total,
-                    'errors' => (int)$endpoint->errors,
-                    'avg_ms' => round((float)$endpoint->avg_nanos / 1_000_000, 1),
+                return (object) [
+                    'name'   => $endpoint->name,
+                    'total'  => $total,
+                    'errors' => (int) $endpoint->errors,
+                    'avg_ms' => round((float) $endpoint->avg_nanos / 1_000_000, 1),
                     'p50_ms' => $this->percentileMs($project, $endpoint->name, $since, $total, 0.50),
                     'p95_ms' => $this->percentileMs($project, $endpoint->name, $since, $total, 0.95),
                     'p99_ms' => $this->percentileMs($project, $endpoint->name, $since, $total, 0.99),
@@ -50,7 +50,7 @@ class SlowEndpointsQuery
 
     private function percentileMs(Project $project, string $name, Carbon $since, int $total, float $fraction): float
     {
-        $offset = min((int)floor($total * $fraction), $total - 1);
+        $offset = min((int) floor($total * $fraction), $total - 1);
 
         $nanos = DB::table('otel_spans')
             ->where('project_id', $project->id)
@@ -63,6 +63,6 @@ class SlowEndpointsQuery
             ->limit(1)
             ->value('duration_nanos');
 
-        return $nanos === null ? 0.0 : round((int)$nanos / 1_000_000, 1);
+        return $nanos === null ? 0.0 : round((int) $nanos / 1_000_000, 1);
     }
 }

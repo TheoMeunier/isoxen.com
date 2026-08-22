@@ -7,7 +7,7 @@ use Illuminate\Queue\Events\JobAttempted;
 use Isoxen\Client\WorkerMode\WorkerModeDetectorInterface;
 
 /**
- * Detects Laravel Queue worker mode
+ * Detects Laravel Queue worker mode.
  */
 class QueueWorkerModeDetector implements WorkerModeDetectorInterface
 {

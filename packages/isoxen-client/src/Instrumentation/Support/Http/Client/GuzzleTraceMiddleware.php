@@ -93,7 +93,7 @@ class GuzzleTraceMiddleware
     protected static function recordHeaders(SpanInterface $span, RequestInterface|ResponseInterface $http): SpanInterface
     {
         $prefix = match (true) {
-            $http instanceof RequestInterface => 'http.request.header.',
+            $http instanceof RequestInterface  => 'http.request.header.',
             $http instanceof ResponseInterface => 'http.response.header.',
         };
 
@@ -126,7 +126,8 @@ class GuzzleTraceMiddleware
             description: 'Duration of HTTP client requests.',
             advisory: [
                 'ExplicitBucketBoundaries' => [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0],
-            ])
+            ]
+        )
             ->record($duration, $attributes);
     }
 
@@ -138,15 +139,15 @@ class GuzzleTraceMiddleware
         $route = HttpClientInstrumentation::routeName($request);
 
         return [
-            UrlAttributes::URL_SCHEME => $request->getUri()->getScheme(),
-            HttpAttributes::HTTP_REQUEST_METHOD => $request->getMethod(),
-            HttpAttributes::HTTP_RESPONSE_STATUS_CODE => $response->getStatusCode(),
-            UrlIncubatingAttributes::URL_TEMPLATE => $route,
-            ErrorAttributes::ERROR_TYPE => $response->getStatusCode() >= 400 && $response->getStatusCode() <= 599 ? (string) $response->getStatusCode() : null,
-            NetworkAttributes::NETWORK_PROTOCOL_NAME => 'http',
+            UrlAttributes::URL_SCHEME                   => $request->getUri()->getScheme(),
+            HttpAttributes::HTTP_REQUEST_METHOD         => $request->getMethod(),
+            HttpAttributes::HTTP_RESPONSE_STATUS_CODE   => $response->getStatusCode(),
+            UrlIncubatingAttributes::URL_TEMPLATE       => $route,
+            ErrorAttributes::ERROR_TYPE                 => $response->getStatusCode() >= 400 && $response->getStatusCode() <= 599 ? (string) $response->getStatusCode() : null,
+            NetworkAttributes::NETWORK_PROTOCOL_NAME    => 'http',
             NetworkAttributes::NETWORK_PROTOCOL_VERSION => $response->getProtocolVersion(),
-            ServerAttributes::SERVER_ADDRESS => $request->getUri()->getHost(),
-            ServerAttributes::SERVER_PORT => $request->getUri()->getPort(),
+            ServerAttributes::SERVER_ADDRESS            => $request->getUri()->getHost(),
+            ServerAttributes::SERVER_PORT               => $request->getUri()->getPort(),
         ];
     }
 }

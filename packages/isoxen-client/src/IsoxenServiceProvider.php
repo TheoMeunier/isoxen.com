@@ -74,22 +74,22 @@ class IsoxenServiceProvider extends PackageServiceProvider
      * fully-qualified class names.
      */
     protected const SENSOR_MAP = [
-        'requests' => Instrumentation\HttpServerInstrumentation::class,
+        'requests'          => Instrumentation\HttpServerInstrumentation::class,
         'outgoing_requests' => Instrumentation\HttpClientInstrumentation::class,
-        'queries' => Instrumentation\QueryInstrumentation::class,
-        'redis' => Instrumentation\RedisInstrumentation::class,
-        'jobs' => Instrumentation\QueueInstrumentation::class,
-        'cache' => Instrumentation\CacheInstrumentation::class,
-        'events' => Instrumentation\EventInstrumentation::class,
-        'views' => Instrumentation\ViewInstrumentation::class,
-        'livewire' => Instrumentation\LivewireInstrumentation::class,
-        'scout' => Instrumentation\ScoutInstrumentation::class,
-        'commands' => Instrumentation\ConsoleInstrumentation::class,
-        'scheduled_tasks' => Instrumentation\ScheduledTaskInstrumentation::class,
-        'mail' => Instrumentation\MailInstrumentation::class,
-        'notifications' => Instrumentation\NotificationInstrumentation::class,
-        'users' => Instrumentation\UserInstrumentation::class,
-        'logs' => Instrumentation\LogInstrumentation::class,
+        'queries'           => Instrumentation\QueryInstrumentation::class,
+        'redis'             => Instrumentation\RedisInstrumentation::class,
+        'jobs'              => Instrumentation\QueueInstrumentation::class,
+        'cache'             => Instrumentation\CacheInstrumentation::class,
+        'events'            => Instrumentation\EventInstrumentation::class,
+        'views'             => Instrumentation\ViewInstrumentation::class,
+        'livewire'          => Instrumentation\LivewireInstrumentation::class,
+        'scout'             => Instrumentation\ScoutInstrumentation::class,
+        'commands'          => Instrumentation\ConsoleInstrumentation::class,
+        'scheduled_tasks'   => Instrumentation\ScheduledTaskInstrumentation::class,
+        'mail'              => Instrumentation\MailInstrumentation::class,
+        'notifications'     => Instrumentation\NotificationInstrumentation::class,
+        'users'             => Instrumentation\UserInstrumentation::class,
+        'logs'              => Instrumentation\LogInstrumentation::class,
     ];
 
     public function packageRegistered(): void
@@ -133,7 +133,7 @@ class IsoxenServiceProvider extends PackageServiceProvider
         $resolved = [];
 
         foreach (self::SENSOR_MAP as $sensorKey => $class) {
-            $value = config("isoxen.sensors.{$sensorKey}", true);
+            $value   = config("isoxen.sensors.{$sensorKey}", true);
             $enabled = is_array($value) ? (bool) ($value['enabled'] ?? true) : (bool) $value;
 
             if (! $enabled) {
@@ -162,11 +162,11 @@ class IsoxenServiceProvider extends PackageServiceProvider
         $resource = ResourceBuilder::build();
 
         $propagator = match (Sdk::isDisabled()) {
-            true => new NoopTextMapPropagator,
+            true  => new NoopTextMapPropagator,
             false => PropagatorBuilder::new()->build(config('isoxen.propagators')),
         };
 
-        $meterProvider = $this->buildMeterProvider($resource);
+        $meterProvider  = $this->buildMeterProvider($resource);
         $tracerProvider = $this->buildTracerProvider($resource, meterProvider: $meterProvider);
         $loggerProvider = $this->buildLoggerProvider($resource, meterProvider: $meterProvider);
 
@@ -260,7 +260,7 @@ class IsoxenServiceProvider extends PackageServiceProvider
     protected function buildTracerProvider(ResourceInfo $resource, MeterProviderInterface $meterProvider): TracerProviderInterface
     {
         $spanExporter = match (Sdk::isDisabled()) {
-            true => new NoopSpanExporter,
+            true  => new NoopSpanExporter,
             false => new OtlpSpanExporter($this->buildTransport('traces')),
         };
         $this->app->bind(SpanExporterInterface::class, fn () => $spanExporter);
@@ -281,17 +281,17 @@ class IsoxenServiceProvider extends PackageServiceProvider
             args: ['ratio' => config('isoxen.sampler.ratio', 0.05)],
         );
 
-        $tailSamplingConfig = config('isoxen.sampler.tail_sampling', []);
+        $tailSamplingConfig  = config('isoxen.sampler.tail_sampling', []);
         $tailSamplingEnabled = (bool) ($tailSamplingConfig['enabled'] ?? false);
 
         return TracerProvider::builder()
             ->setResource($resource)
             ->setSampler(match ($tailSamplingEnabled) {
-                true => new AlwaysOnSampler,
+                true  => new AlwaysOnSampler,
                 false => $sampler,
             })
             ->addSpanProcessor(match ($tailSamplingEnabled) {
-                true => $this->buildTailSamplingProcessor($batchProcessor, $sampler, $tailSamplingConfig),
+                true  => $this->buildTailSamplingProcessor($batchProcessor, $sampler, $tailSamplingConfig),
                 false => $batchProcessor,
             })
             ->build();
@@ -300,7 +300,7 @@ class IsoxenServiceProvider extends PackageServiceProvider
     protected function buildMeterProvider(ResourceInfo $resource): MeterProviderInterface
     {
         $metricsExporter = match (Sdk::isDisabled()) {
-            true => new NoopMetricExporter,
+            true  => new NoopMetricExporter,
             false => new MetricExporter($this->buildTransport('metrics')),
         };
         $this->app->singleton(MetricExporterInterface::class, fn () => $metricsExporter);
@@ -320,7 +320,7 @@ class IsoxenServiceProvider extends PackageServiceProvider
     protected function buildLoggerProvider(ResourceInfo $resource, MeterProviderInterface $meterProvider): LoggerProviderInterface
     {
         $logExporter = match (Sdk::isDisabled()) {
-            true => new LogsNoopExporter,
+            true  => new LogsNoopExporter,
             false => new LogsExporter($this->buildTransport('logs')),
         };
         $this->app->bind(LogRecordExporterInterface::class, fn () => $logExporter);
@@ -372,7 +372,7 @@ class IsoxenServiceProvider extends PackageServiceProvider
     protected function buildHttpTransport(string $signal): TransportInterface
     {
         $endpoint = rtrim((string) config('isoxen.endpoint'), '/');
-        $token = (string) config('isoxen.token');
+        $token    = (string) config('isoxen.token');
 
         return (new OtlpHttpTransportFactory)->create(
             endpoint: "{$endpoint}/v1/{$signal}",
@@ -397,9 +397,9 @@ class IsoxenServiceProvider extends PackageServiceProvider
         $rules = [];
 
         foreach ([
-            TailSampling\Rules\ErrorsRule::class => (bool) ($config['keep_errors'] ?? true),
+            TailSampling\Rules\ErrorsRule::class    => (bool) ($config['keep_errors'] ?? true),
             TailSampling\Rules\SlowTraceRule::class => [
-                'enabled' => (bool) ($config['keep_slow_traces'] ?? true),
+                'enabled'      => (bool) ($config['keep_slow_traces'] ?? true),
                 'threshold_ms' => (int) ($config['slow_trace_threshold_ms'] ?? 2000),
             ],
         ] as $ruleClass => $options) {
@@ -437,9 +437,9 @@ class IsoxenServiceProvider extends PackageServiceProvider
             }
 
             $config->set('logging.channels.otlp', [
-                'driver' => 'monolog',
+                'driver'  => 'monolog',
                 'handler' => OpenTelemetryMonologHandler::class,
-                'level' => 'debug',
+                'level'   => 'debug',
             ]);
         });
     }

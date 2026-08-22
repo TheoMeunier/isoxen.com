@@ -8,7 +8,9 @@ use App\Core\Controllers\Controller;
 use App\Watch\Projects\Models\Project;
 use Illuminate\Http\Request;
 
-/** Shared request decoding and project resolution for the three OTLP/HTTP+JSON ingestion endpoints. */
+/**
+ * Shared request decoding and project resolution for the three OTLP/HTTP+JSON ingestion endpoints.
+ */
 abstract class IngestOtlpController extends Controller
 {
     /**
@@ -18,9 +20,7 @@ abstract class IngestOtlpController extends Controller
      */
     protected function decode(Request $request, string $rootKey): array
     {
-        if (! $request->isJson()) {
-            abort(415, 'Only OTLP/HTTP+JSON is supported for now; protobuf support is planned separately.');
-        }
+        abort_unless($request->isJson(), 415, 'Only OTLP/HTTP+JSON is supported for now; protobuf support is planned separately.');
 
         $payload = $request->json()->all();
 
@@ -28,9 +28,7 @@ abstract class IngestOtlpController extends Controller
             return [$rootKey => []];
         }
 
-        if (! is_array($payload[$rootKey])) {
-            abort(400, "Invalid \"{$rootKey}\" in payload: expected a list, got ".get_debug_type($payload[$rootKey]).'.');
-        }
+        abort_unless(is_array($payload[$rootKey]), 400, "Invalid \"{$rootKey}\" in payload: expected a list, got ".get_debug_type($payload[$rootKey]).'.');
 
         return $payload;
     }

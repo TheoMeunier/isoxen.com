@@ -20,14 +20,14 @@ function otlpTracesPayload(): array
                     [
                         'spans' => [
                             [
-                                'traceId' => '5b8aa5a2d2c872e8321cf37308d69df2',
-                                'spanId' => '051581bf3cb55c13',
-                                'name' => 'GET /orders',
-                                'kind' => 2,
+                                'traceId'           => '5b8aa5a2d2c872e8321cf37308d69df2',
+                                'spanId'            => '051581bf3cb55c13',
+                                'name'              => 'GET /orders',
+                                'kind'              => 2,
                                 'startTimeUnixNano' => '1660296023390000000',
-                                'endTimeUnixNano' => '1660296023420000000',
-                                'status' => ['code' => 1],
-                                'attributes' => [
+                                'endTimeUnixNano'   => '1660296023420000000',
+                                'status'            => ['code' => 1],
+                                'attributes'        => [
                                     ['key' => 'http.method', 'value' => ['stringValue' => 'GET']],
                                 ],
                             ],
@@ -49,7 +49,7 @@ test('a valid traces payload is accepted and queued for storage', function () {
     ])->assertOk();
 
     Queue::assertPushed(StoreOtlpSpans::class, fn (StoreOtlpSpans $job): bool => $job->projectId === $project->id
-        && $job->payload === otlpTracesPayload());
+        && $job->payload                                                                         === otlpTracesPayload());
 });
 
 test('a traces payload missing "resourceSpans" is rejected', function () {
@@ -69,7 +69,7 @@ test('a non-JSON traces request is rejected', function () {
 
     $this->post(route('otel.traces'), [], [
         'Authorization' => "Bearer {$project->token}",
-        'Content-Type' => 'application/x-protobuf',
+        'Content-Type'  => 'application/x-protobuf',
     ])->assertStatus(415);
 });
 
@@ -80,17 +80,17 @@ test('the store spans job inserts one row per span', function () {
 
     $this->assertDatabaseHas('otel_spans', [
         'project_id' => $project->id,
-        'trace_id' => '5b8aa5a2d2c872e8321cf37308d69df2',
-        'span_id' => '051581bf3cb55c13',
-        'name' => 'GET /orders',
+        'trace_id'   => '5b8aa5a2d2c872e8321cf37308d69df2',
+        'span_id'    => '051581bf3cb55c13',
+        'name'       => 'GET /orders',
     ]);
 });
 
 test('a span is categorized from its "isoxen.type" attribute', function () {
-    $project = Project::factory()->create();
-    $payload = otlpTracesPayload();
+    $project                                                                  = Project::factory()->create();
+    $payload                                                                  = otlpTracesPayload();
     $payload['resourceSpans'][0]['scopeSpans'][0]['spans'][0]['attributes'][] = [
-        'key' => 'isoxen.type',
+        'key'   => 'isoxen.type',
         'value' => ['stringValue' => 'request'],
     ];
 
@@ -98,8 +98,8 @@ test('a span is categorized from its "isoxen.type" attribute', function () {
 
     $this->assertDatabaseHas('otel_spans', [
         'project_id' => $project->id,
-        'span_id' => '051581bf3cb55c13',
-        'type' => 'request',
+        'span_id'    => '051581bf3cb55c13',
+        'type'       => 'request',
     ]);
 });
 
@@ -110,7 +110,7 @@ test('a span without "isoxen.type" is stored as uncategorized', function () {
 
     $this->assertDatabaseHas('otel_spans', [
         'project_id' => $project->id,
-        'span_id' => '051581bf3cb55c13',
-        'type' => null,
+        'span_id'    => '051581bf3cb55c13',
+        'type'       => null,
     ]);
 });

@@ -78,7 +78,8 @@ class QueryInstrumentation implements Instrumentation
             description: 'Duration of database client operations.',
             advisory: [
                 'ExplicitBucketBoundaries' => [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0],
-            ])
+            ]
+        )
             ->record($duration, $attributes);
     }
 
@@ -88,12 +89,12 @@ class QueryInstrumentation implements Instrumentation
     protected function sharedTraceMetricAttributes(QueryExecuted $event, string $operationName): array
     {
         return [
-            DbAttributes::DB_SYSTEM_NAME => $event->connection->getDriverName(),
-            DbAttributes::DB_NAMESPACE => $event->connection->getDatabaseName(),
-            DbAttributes::DB_OPERATION_NAME => $operationName,
-            DbAttributes::DB_QUERY_TEXT => Str::limit($event->sql, 500),
+            DbAttributes::DB_SYSTEM_NAME     => $event->connection->getDriverName(),
+            DbAttributes::DB_NAMESPACE       => $event->connection->getDatabaseName(),
+            DbAttributes::DB_OPERATION_NAME  => $operationName,
+            DbAttributes::DB_QUERY_TEXT      => Str::limit($event->sql, 500),
             ServerAttributes::SERVER_ADDRESS => $event->connection->getConfig('host'),
-            ServerAttributes::SERVER_PORT => $event->connection->getConfig('port'),
+            ServerAttributes::SERVER_PORT    => $event->connection->getConfig('port'),
         ];
     }
 }

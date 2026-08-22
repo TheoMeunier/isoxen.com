@@ -22,7 +22,9 @@ use Throwable;
  */
 final class Diagnostics
 {
-    /** Past this size the file is started over rather than grown. */
+    /**
+     * Past this size the file is started over rather than grown.
+     */
     private const MAX_BYTES = 1_048_576;
 
     public static function write(string $message): void
@@ -43,7 +45,7 @@ final class Diagnostics
                 file_put_contents($path, "--- truncated ---\n");
             }
 
-            file_put_contents($path, $line."\n", FILE_APPEND | LOCK_EX);
+            file_put_contents($path, $line."\n", FILE_APPEND|LOCK_EX);
         } catch (Throwable) {
             // A diagnostic channel must never become the thing that breaks.
         }

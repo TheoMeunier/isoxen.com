@@ -10,9 +10,9 @@ use OpenTelemetry\SDK\Registry;
 
 final class PropagatorBuilder
 {
-    public static function new(): PropagatorBuilder
+    public static function new(): self
     {
-        return new PropagatorBuilder;
+        return new self;
     }
 
     public function build(string $propagators): TextMapPropagatorInterface

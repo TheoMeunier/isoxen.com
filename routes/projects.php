@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Watch\Ingestion\Support\ObservabilityCategories;
 use App\Watch\Projects\Controllers\CreateProjectController;
 use App\Watch\Projects\Controllers\DeleteProjectController;

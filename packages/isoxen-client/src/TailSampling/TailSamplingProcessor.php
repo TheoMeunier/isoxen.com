@@ -24,7 +24,9 @@ final class TailSamplingProcessor implements SpanProcessorInterface
     public function __construct(
         protected SpanProcessorInterface $downstream,
         protected SamplerInterface $sampler,
-        /** @var TailSamplingRuleInterface[] $rules */
+        /**
+         * @var TailSamplingRuleInterface[] $rules
+         */
         protected array $rules = [],
         protected int $decisionWait = 5000
     ) {}

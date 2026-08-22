@@ -58,7 +58,7 @@ class ExportTelemetry implements ShouldQueue
     public function handle(): void
     {
         $endpoint = rtrim((string) config('isoxen.endpoint'), '/');
-        $token = (string) config('isoxen.token');
+        $token    = (string) config('isoxen.token');
 
         if ($endpoint === '' || $token === '') {
             // Saying so out loud, because discarding telemetry in silence

@@ -25,6 +25,6 @@ class TraceLogsQuery
             ->select(['time', 'span_id', 'severity_text', 'severity_number', 'body'])
             ->limit($limit)
             ->get()
-            ->map(fn(object $row): object => $this->toIso($row));
+            ->map(fn (object $row): object => $this->toIso($row));
     }
 }

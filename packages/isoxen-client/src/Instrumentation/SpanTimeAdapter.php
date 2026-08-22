@@ -9,7 +9,7 @@ trait SpanTimeAdapter
 {
     protected function getEventStartTimestampNs(float $timeMs): int
     {
-        $nowNs = Clock::getDefault()->now();
+        $nowNs      = Clock::getDefault()->now();
         $durationNs = (int) ($timeMs * ClockInterface::NANOS_PER_MILLISECOND);
 
         return $nowNs - $durationNs;

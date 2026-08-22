@@ -18,21 +18,21 @@ class SpanBuilder
         protected SpanBuilderInterface $spanBuilder
     ) {}
 
-    public function setParent(?ContextInterface $context): SpanBuilder
+    public function setParent(?ContextInterface $context): self
     {
         $this->spanBuilder->setParent($context);
 
         return $this;
     }
 
-    public function addLink(SpanContextInterface $context, iterable $attributes = []): SpanBuilder
+    public function addLink(SpanContextInterface $context, iterable $attributes = []): self
     {
         $this->spanBuilder->addLink($context, $attributes);
 
         return $this;
     }
 
-    public function setAttribute(string $key, mixed $value): SpanBuilder
+    public function setAttribute(string $key, mixed $value): self
     {
         $this->spanBuilder->setAttribute($key, $value);
 
@@ -42,7 +42,7 @@ class SpanBuilder
     /**
      * @param  iterable<string,mixed>  $attributes
      */
-    public function setAttributes(iterable $attributes): SpanBuilder
+    public function setAttributes(iterable $attributes): self
     {
         $this->spanBuilder->setAttributes($attributes);
 
@@ -52,7 +52,7 @@ class SpanBuilder
     /**
      * @param  CarbonInterface|int  $timestamp  A carbon instance or a timestamp in nanoseconds
      */
-    public function setStartTimestamp(CarbonInterface|int $timestamp): SpanBuilder
+    public function setStartTimestamp(CarbonInterface|int $timestamp): self
     {
         if ($timestamp instanceof CarbonInterface) {
             $timestamp = CarbonClock::carbonToNanos($timestamp);
@@ -66,7 +66,7 @@ class SpanBuilder
     /**
      * @phpstan-param  SpanKind::KIND_* $spanKind
      */
-    public function setSpanKind(int $spanKind): SpanBuilder
+    public function setSpanKind(int $spanKind): self
     {
         $this->spanBuilder->setSpanKind($spanKind);
 
@@ -88,7 +88,7 @@ class SpanBuilder
      */
     public function measure(Closure $callback): mixed
     {
-        $span = $this->start();
+        $span  = $this->start();
         $scope = $span->activate();
 
         try {

@@ -7,7 +7,7 @@ use Isoxen\Client\WorkerMode\WorkerModeDetectorInterface;
 use Laravel\Octane\Events\RequestTerminated;
 
 /**
- * Detects Laravel Octane worker mode
+ * Detects Laravel Octane worker mode.
  */
 class OctaneWorkerModeDetector implements WorkerModeDetectorInterface
 {

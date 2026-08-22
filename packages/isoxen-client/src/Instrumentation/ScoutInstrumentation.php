@@ -50,21 +50,21 @@ class ScoutInstrumentation implements Instrumentation
 
             $operationName = match ($methodName) {
                 'search', 'paginate' => 'search',
-                'update' => 'search_update',
-                'delete' => 'search_delete',
-                default => sprintf('search_%s', $methodName),
+                'update'             => 'search_update',
+                'delete'             => 'search_delete',
+                default              => sprintf('search_%s', $methodName),
             };
 
             $operationTarget = match (true) {
-                $params[0] instanceof Builder => $this->resolveOperationNamespace($params[0]->model),
+                $params[0] instanceof Builder    => $this->resolveOperationNamespace($params[0]->model),
                 $params[0] instanceof Collection => $this->resolveOperationNamespace($params[0]->first()),
-                default => null,
+                default                          => null,
             };
 
             $attributes = [
-                DbAttributes::DB_SYSTEM_NAME => $this->resolveEngineName($engine),
+                DbAttributes::DB_SYSTEM_NAME    => $this->resolveEngineName($engine),
                 DbAttributes::DB_OPERATION_NAME => $operationName,
-                DbAttributes::DB_NAMESPACE => $operationTarget,
+                DbAttributes::DB_NAMESPACE      => $operationTarget,
             ];
 
             if ($params[0] instanceof Builder) {
@@ -76,7 +76,7 @@ class ScoutInstrumentation implements Instrumentation
 
             if ($params[0] instanceof Collection) {
                 $attributes[DbAttributes::DB_OPERATION_BATCH_SIZE] = $params[0]->count();
-                $attributes['db.operation.batch.ids'] = $params[0]->map(fn (Model $model) => $model->getKey())->values()->join(', ');
+                $attributes['db.operation.batch.ids']              = $params[0]->map(fn (Model $model) => $model->getKey())->values()->join(', ');
             }
 
             $span = Tracer::newSpan(sprintf('%s %s', $operationName, $operationTarget))
@@ -99,8 +99,8 @@ class ScoutInstrumentation implements Instrumentation
                 $duration = $this->activeSpan->getDuration() / ClockInterface::NANOS_PER_SECOND;
 
                 $attributes = [
-                    DbAttributes::DB_SYSTEM_NAME => $this->activeSpan->getAttribute(DbAttributes::DB_SYSTEM_NAME),
-                    DbAttributes::DB_NAMESPACE => $this->activeSpan->getAttribute(DbAttributes::DB_NAMESPACE),
+                    DbAttributes::DB_SYSTEM_NAME    => $this->activeSpan->getAttribute(DbAttributes::DB_SYSTEM_NAME),
+                    DbAttributes::DB_NAMESPACE      => $this->activeSpan->getAttribute(DbAttributes::DB_NAMESPACE),
                     DbAttributes::DB_OPERATION_NAME => $this->activeSpan->getAttribute(DbAttributes::DB_OPERATION_NAME),
                 ];
 
@@ -110,7 +110,8 @@ class ScoutInstrumentation implements Instrumentation
                     description: 'Duration of database client operations.',
                     advisory: [
                         'ExplicitBucketBoundaries' => [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0],
-                    ])
+                    ]
+                )
                     ->record($duration, $attributes);
             }
 

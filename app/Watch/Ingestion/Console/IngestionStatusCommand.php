@@ -9,16 +9,14 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+#[\Illuminate\Console\Attributes\Description('Show what has been ingested, per signal.')]
+#[\Illuminate\Console\Attributes\Signature('isoxen:ingestion-status')]
 class IngestionStatusCommand extends Command
 {
-    protected $signature = 'isoxen:ingestion-status';
-
-    protected $description = 'Show what has been ingested, per signal.';
-
-    private const TABLES = [
-        'traces' => 'otel_spans',
+    private const array TABLES = [
+        'traces'  => 'otel_spans',
         'metrics' => 'otel_metrics',
-        'logs' => 'otel_logs',
+        'logs'    => 'otel_logs',
     ];
 
     public function handle(): int
@@ -36,8 +34,8 @@ class IngestionStatusCommand extends Command
 
     private function reportTable(string $signal, string $table): void
     {
-        if (!Schema::hasTable($table)) {
-            $this->components->twoColumnDetail($signal, '<fg=red>table ' . $table . ' is missing — run migrations</>');
+        if (! Schema::hasTable($table)) {
+            $this->components->twoColumnDetail($signal, '<fg=red>table '.$table.' is missing — run migrations</>');
 
             return;
         }
@@ -51,17 +49,17 @@ class IngestionStatusCommand extends Command
         }
 
         $latest = DB::table($table)->max('time');
-        $age = $latest === null ? null : Carbon::parse($latest)->diffForHumans();
+        $age    = $latest === null ? null : \Illuminate\Support\Facades\Date::parse($latest)->diffForHumans();
 
         $this->components->twoColumnDetail(
             $signal,
-            "<fg=green>{$total}</> rows, most recent " . ($age ?? 'unknown'),
+            "<fg=green>{$total}</> rows, most recent ".($age ?? 'unknown'),
         );
     }
 
     private function reportFailedJobs(): void
     {
-        if (!Schema::hasTable('failed_jobs')) {
+        if (! Schema::hasTable('failed_jobs')) {
             return;
         }
 

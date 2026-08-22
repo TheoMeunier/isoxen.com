@@ -16,13 +16,13 @@ class CategorySummaryQuery
      */
     public function execute(Project $project, string $table, ?string $type = null, int $hours = 24): array
     {
-        $since = Carbon::now()->subHours($hours);
+        $since = \Illuminate\Support\Facades\Date::now()->subHours($hours);
 
         $total = $this->base($project, $table, $type, $since)->count();
 
         return [
-            'total' => $total,
-            'errors' => $this->errors($project, $table, $type, $since),
+            'total'      => $total,
+            'errors'     => $this->errors($project, $table, $type, $since),
             'slowest_ms' => $table === 'otel_spans'
                 ? $this->p95Milliseconds($project, $type, $since, $total)
                 : null,
@@ -40,11 +40,13 @@ class CategorySummaryQuery
             'otel_spans' => $this->base($project, $table, $type, $since)->where('status_code', 2)->count(),
             // OTEL severity number 17 is where ERROR begins.
             'otel_logs' => $this->base($project, $table, $type, $since)->where('severity_number', '>=', 17)->count(),
-            default => null,
+            default     => null,
         };
     }
 
-    /** The 95th percentile duration in milliseconds, read by order-and-offset since SQLite has no `percentile_cont`. */
+    /**
+     * The 95th percentile duration in milliseconds, read by order-and-offset since SQLite has no `percentile_cont`.
+     */
     private function p95Milliseconds(Project $project, ?string $type, Carbon $since, int $total): ?float
     {
         if ($total === 0) {
@@ -54,21 +56,23 @@ class CategorySummaryQuery
         $nanos = $this->base($project, 'otel_spans', $type, $since)
             ->whereNotNull('duration_nanos')
             ->orderBy('duration_nanos')
-            ->offset((int)floor($total * 0.95))
+            ->offset((int) floor($total * 0.95))
             ->limit(1)
             ->value('duration_nanos');
 
-        return $nanos === null ? null : round((int)$nanos / 1_000_000, 1);
+        return $nanos === null ? null : round((int) $nanos / 1_000_000, 1);
     }
 
-    /** The average duration in milliseconds, the Duration panel's headline figure alongside the p95. */
+    /**
+     * The average duration in milliseconds, the Duration panel's headline figure alongside the p95.
+     */
     private function avgMilliseconds(Project $project, ?string $type, Carbon $since): ?float
     {
         $avgNanos = $this->base($project, 'otel_spans', $type, $since)
             ->whereNotNull('duration_nanos')
             ->avg('duration_nanos');
 
-        return $avgNanos === null ? null : round((float)$avgNanos / 1_000_000, 1);
+        return $avgNanos === null ? null : round((float) $avgNanos / 1_000_000, 1);
     }
 
     private function base(Project $project, string $table, ?string $type, Carbon $since): Builder
@@ -76,6 +80,6 @@ class CategorySummaryQuery
         return DB::table($table)
             ->where('project_id', $project->id)
             ->where('time', '>=', $since)
-            ->when($type !== null && $table === 'otel_spans', fn($query) => $query->where('type', $type));
+            ->when($type !== null && $table === 'otel_spans', fn ($query) => $query->where('type', $type));
     }
 }

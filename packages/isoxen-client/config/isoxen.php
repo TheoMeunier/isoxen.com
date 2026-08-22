@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Isoxen\Client\Support\ResourceAttributesParser;
-use Isoxen\Client\TailSampling;
 use Isoxen\Client\WorkerMode;
 use OpenTelemetry\SDK\Common\Configuration\Variables as OTELVariables;
 
@@ -73,7 +72,7 @@ return [
 
     'queue' => [
         'connection' => env('ISOXEN_QUEUE_CONNECTION'),
-        'queue' => env('ISOXEN_QUEUE', 'telemetry'),
+        'queue'      => env('ISOXEN_QUEUE', 'telemetry'),
     ],
 
     /*
@@ -185,14 +184,14 @@ return [
     */
 
     'sampler' => [
-        'type' => env('ISOXEN_SAMPLER_TYPE', 'always_on'),
+        'type'  => env('ISOXEN_SAMPLER_TYPE', 'always_on'),
         'ratio' => (float) env('ISOXEN_SAMPLER_RATIO', 0.05),
 
         'tail_sampling' => [
-            'enabled' => env('ISOXEN_TAIL_SAMPLING_ENABLED', false),
-            'decision_wait_ms' => (int) env('ISOXEN_TAIL_SAMPLING_DECISION_WAIT_MS', 5000),
-            'keep_errors' => env('ISOXEN_TAIL_SAMPLING_KEEP_ERRORS', true),
-            'keep_slow_traces' => env('ISOXEN_TAIL_SAMPLING_KEEP_SLOW_TRACES', true),
+            'enabled'                 => env('ISOXEN_TAIL_SAMPLING_ENABLED', false),
+            'decision_wait_ms'        => (int) env('ISOXEN_TAIL_SAMPLING_DECISION_WAIT_MS', 5000),
+            'keep_errors'             => env('ISOXEN_TAIL_SAMPLING_KEEP_ERRORS', true),
+            'keep_slow_traces'        => env('ISOXEN_TAIL_SAMPLING_KEEP_SLOW_TRACES', true),
             'slow_trace_threshold_ms' => (int) env('ISOXEN_TAIL_SAMPLING_SLOW_THRESHOLD_MS', 2000),
         ],
     ],
@@ -218,11 +217,11 @@ return [
 
     'sensors' => [
         'requests' => [
-            'enabled' => env('ISOXEN_SENSOR_REQUESTS', true),
-            'excluded_paths' => [],
-            'excluded_methods' => [],
-            'allowed_headers' => [],
-            'sensitive_headers' => [],
+            'enabled'                    => env('ISOXEN_SENSOR_REQUESTS', true),
+            'excluded_paths'             => [],
+            'excluded_methods'           => [],
+            'allowed_headers'            => [],
+            'sensitive_headers'          => [],
             'sensitive_query_parameters' => [],
         ],
 
@@ -254,7 +253,7 @@ return [
         'cache' => env('ISOXEN_SENSOR_CACHE', false),
 
         'events' => [
-            'enabled' => env('ISOXEN_SENSOR_EVENTS', false),
+            'enabled'  => env('ISOXEN_SENSOR_EVENTS', false),
             'excluded' => [],
         ],
 
@@ -297,7 +296,7 @@ return [
         // written through channels other than isoxen's own can still be
         // correlated to the trace that produced them.
         'inject_trace_id' => true,
-        'trace_id_field' => 'trace_id',
+        'trace_id_field'  => 'trace_id',
     ],
 
     /*

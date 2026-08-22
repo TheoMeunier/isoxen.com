@@ -22,7 +22,7 @@ class SpanTypeCountsQuery
             ->selectRaw('type, count(*) as aggregate')
             ->groupBy('type')
             ->pluck('aggregate', 'type')
-            ->map(fn ($count) => (int) $count)
+            ->map(fn ($count): int => (int) $count)
             ->all();
     }
 }

@@ -18,12 +18,12 @@ class ActivityTimelineQuery
      */
     public function execute(Project $project, string $table, ?string $type = null, int $hours = 24): array
     {
-        $since = Carbon::now('UTC')->subHours($hours - 1)->startOfHour();
+        $since  = \Illuminate\Support\Facades\Date::now('UTC')->subHours($hours - 1)->startOfHour();
         $bucket = $this->bucketExpression();
 
         $counts = DB::table($table)
             ->where('project_id', $project->id)
-            ->when($type !== null && $table === 'otel_spans', fn($query) => $query->where('type', $type))
+            ->when($type !== null && $table === 'otel_spans', fn ($query) => $query->where('type', $type))
             ->where('time', '>=', $since)
             ->groupByRaw($bucket)
             ->selectRaw("{$bucket} as bucket, count(*) as aggregate")
@@ -35,8 +35,8 @@ class ActivityTimelineQuery
             $at = $since->copy()->addHours($hour);
 
             $series[] = [
-                'at' => $at->toIso8601String(),
-                'count' => (int)($counts[$at->format('Y-m-d H:00')] ?? 0),
+                'at'    => $at->toIso8601String(),
+                'count' => (int) ($counts[$at->format('Y-m-d H:00')] ?? 0),
             ];
         }
 

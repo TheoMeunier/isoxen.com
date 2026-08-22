@@ -6,7 +6,9 @@ namespace App\Watch\Ingestion\Queries\Concerns;
 
 use Illuminate\Support\Facades\DB;
 
-/** The SQL fragment truncating a `time` column to its containing UTC hour, as a key both sides of a query share. */
+/**
+ * The SQL fragment truncating a `time` column to its containing UTC hour, as a key both sides of a query share.
+ */
 trait BucketsByHour
 {
     protected function bucketExpression(): string

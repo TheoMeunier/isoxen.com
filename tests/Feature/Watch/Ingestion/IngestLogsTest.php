@@ -20,12 +20,12 @@ function otlpLogsPayload(): array
                     [
                         'logRecords' => [
                             [
-                                'timeUnixNano' => '1660296023390000000',
+                                'timeUnixNano'   => '1660296023390000000',
                                 'severityNumber' => 9,
-                                'severityText' => 'INFO',
-                                'body' => ['stringValue' => 'Order created'],
-                                'traceId' => '5b8aa5a2d2c872e8321cf37308d69df2',
-                                'spanId' => '051581bf3cb55c13',
+                                'severityText'   => 'INFO',
+                                'body'           => ['stringValue' => 'Order created'],
+                                'traceId'        => '5b8aa5a2d2c872e8321cf37308d69df2',
+                                'spanId'         => '051581bf3cb55c13',
                             ],
                         ],
                     ],
@@ -61,9 +61,9 @@ test('the store logs job inserts one row per log record', function () {
     (new StoreOtlpLogs($project->id, otlpLogsPayload()))->handle();
 
     $this->assertDatabaseHas('otel_logs', [
-        'project_id' => $project->id,
+        'project_id'    => $project->id,
         'severity_text' => 'INFO',
-        'body' => 'Order created',
-        'trace_id' => '5b8aa5a2d2c872e8321cf37308d69df2',
+        'body'          => 'Order created',
+        'trace_id'      => '5b8aa5a2d2c872e8321cf37308d69df2',
     ]);
 });

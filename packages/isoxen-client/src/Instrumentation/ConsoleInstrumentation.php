@@ -67,7 +67,7 @@ class ConsoleInstrumentation implements Instrumentation
             ->filter()
             ->partition(fn (string $command) => str_ends_with($command, '*'));
 
-        $this->excluded = $fullCommands->values()->all();
+        $this->excluded          = $fullCommands->values()->all();
         $this->excludedWildcards = $wildcards->values()->all();
 
         app('events')->listen(CommandStarting::class, [$this, 'commandStarting']);

@@ -4,66 +4,54 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Parsing;
 
-use App\Watch\Ingestion\Support\OtlpAttributes;
-use App\Watch\Ingestion\Support\OtlpTimestamp;
-use App\Watch\Ingestion\Support\OtlpValue;
+use App\Watch\Ingestion\Data\LogRow;
+use App\Watch\Ingestion\Data\Otlp\LogRecord;
+use App\Watch\Ingestion\Data\Otlp\LogsPayload;
+use App\Watch\Ingestion\Data\Otlp\ResourceLogs;
+use DateTimeImmutable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 final class OtlpLogsParser
 {
     /**
-     * @param array<string, mixed> $payload
-     * @return array<int, array<string, mixed>>
+     * @param  array<string, mixed>  $payload
+     * @return Collection<int, LogRow>
      */
-    public static function toRows(int $projectId, array $payload): array
+    public static function toRows(int $projectId, array $payload): Collection
     {
-        $rows = [];
-        $now = Carbon::now();
+        $now = DateTimeImmutable::createFromInterface(\Illuminate\Support\Facades\Date::now());
 
-        foreach ($payload['resourceLogs'] ?? [] as $resourceLog) {
-            $resourceAttributes = OtlpAttributes::toArray($resourceLog['resource']['attributes'] ?? []);
-
-            foreach ($resourceLog['scopeLogs'] ?? [] as $scopeLog) {
-                foreach ($scopeLog['logRecords'] ?? [] as $logRecord) {
-                    $time = OtlpTimestamp::toCarbon(
-                        $logRecord['timeUnixNano'] ?? $logRecord['observedTimeUnixNano'] ?? null,
-                    );
-
-                    if ($time === null) {
-                        continue;
-                    }
-
-                    $rows[] = [
-                        'project_id' => $projectId,
-                        'trace_id' => OtlpValue::id($logRecord['traceId'] ?? null, 16),
-                        'span_id' => OtlpValue::id($logRecord['spanId'] ?? null, 8),
-                        'severity_number' => OtlpValue::severityNumber($logRecord['severityNumber'] ?? null),
-                        'severity_text' => $logRecord['severityText'] ?? null,
-                        'body' => self::body($logRecord['body'] ?? null),
-                        'time' => OtlpTimestamp::toDatabaseString(
-                            $logRecord['timeUnixNano'] ?? $logRecord['observedTimeUnixNano'] ?? null,
-                        ),
-                        'resource_attributes' => json_encode($resourceAttributes),
-                        'attributes' => json_encode(OtlpAttributes::toArray($logRecord['attributes'] ?? [])),
-                        'raw' => json_encode($logRecord),
-                        'created_at' => $now,
-                    ];
-                }
-            }
-        }
-
-        return $rows;
+        return LogsPayload::fromArray($payload)
+            ->resourceLogs
+            ->flatMap(fn (ResourceLogs $resource): Collection => $resource->logRecords
+                ->map(fn (LogRecord $record): ?LogRow => self::toRow($projectId, $resource, $record, $now)))
+            ->filter()
+            ->values();
     }
 
-    private static function body(mixed $body): ?string
-    {
-        if (!is_array($body)) {
+    private static function toRow(
+        int $projectId,
+        ResourceLogs $resource,
+        LogRecord $record,
+        DateTimeImmutable $now,
+    ): ?LogRow {
+        if (!$record->time instanceof \DateTimeImmutable) {
             return null;
         }
 
-        return match (true) {
-            array_key_exists('stringValue', $body) => (string)$body['stringValue'],
-            default => json_encode($body),
-        };
+        return new LogRow(
+            projectId: $projectId,
+            traceId: $record->traceId,
+            spanId: $record->spanId,
+            severityNumber: $record->severityNumber,
+            severityText: $record->severityText,
+            body: $record->body,
+            time: $record->time,
+            resourceAttributes: $resource->resourceAttributes,
+            attributes: $record->attributes,
+            raw: $record->raw,
+            createdAt: $now,
+        );
     }
 }

@@ -16,9 +16,7 @@ class CreateProjectController extends Controller
 {
     public function __construct(
         private readonly CreateProjectAction $createProjectAction,
-    )
-    {
-    }
+    ) {}
 
     public function execute(CreateProjectRequest $request): RedirectResponse
     {
@@ -29,7 +27,7 @@ class CreateProjectController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created.')]);
 
         return to_route('projects.show', [
-            'project' => $project,
+            'project'  => $project,
             'category' => ObservabilityCategories::default(),
         ]);
     }

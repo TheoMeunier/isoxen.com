@@ -20,21 +20,21 @@ namespace Isoxen\Client;
  */
 enum SpanType: string
 {
-    case Request = 'request';
-    case Query = 'query';
-    case Job = 'job';
-    case Command = 'command';
-    case ScheduledTask = 'scheduled_task';
-    case Exception = 'exception';
-    case Notification = 'notification';
-    case Mail = 'mail';
-    case Cache = 'cache';
+    case Request         = 'request';
+    case Query           = 'query';
+    case Job             = 'job';
+    case Command         = 'command';
+    case ScheduledTask   = 'scheduled_task';
+    case Exception       = 'exception';
+    case Notification    = 'notification';
+    case Mail            = 'mail';
+    case Cache           = 'cache';
     case OutgoingRequest = 'outgoing_request';
-    case User = 'user';
-    case Redis = 'redis';
-    case View = 'view';
-    case Livewire = 'livewire';
-    case Scout = 'scout';
+    case User            = 'user';
+    case Redis           = 'redis';
+    case View            = 'view';
+    case Livewire        = 'livewire';
+    case Scout           = 'scout';
 
     public const ATTRIBUTE = 'isoxen.type';
 }

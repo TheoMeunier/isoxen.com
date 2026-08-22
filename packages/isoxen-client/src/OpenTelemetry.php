@@ -50,7 +50,7 @@ class OpenTelemetry
     }
 
     /**
-     * Force flush all OpenTelemetry signals (traces, metrics, logs)
+     * Force flush all OpenTelemetry signals (traces, metrics, logs).
      *
      * This method explicitly flushes all pending telemetry data.
      * Useful in long-running processes to ensure data is exported without waiting for process shutdown.

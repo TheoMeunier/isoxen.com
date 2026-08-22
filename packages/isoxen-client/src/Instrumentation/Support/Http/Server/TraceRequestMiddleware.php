@@ -49,10 +49,10 @@ class TraceRequestMiddleware
             return $next($request);
         }
 
-        $bootedTimestamp = HttpServerInstrumentation::getBootedTimestamp() ?? Clock::getDefault()->now();
+        $bootedTimestamp  = HttpServerInstrumentation::getBootedTimestamp() ?? Clock::getDefault()->now();
         $requestStartedAt = $this->requestStartTimestamp($request);
 
-        $span = $this->startTracing($request, $requestStartedAt);
+        $span  = $this->startTracing($request, $requestStartedAt);
         $scope = $span->activate();
 
         Tracer::updateLogContext();
@@ -160,7 +160,8 @@ class TraceRequestMiddleware
             description: 'Duration of HTTP server requests.',
             advisory: [
                 'ExplicitBucketBoundaries' => [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 7.5, 10.0],
-            ])
+            ]
+        )
             ->record($duration, $attributes);
     }
 
@@ -172,26 +173,26 @@ class TraceRequestMiddleware
         $protocolVersion = Str::of($request->getProtocolVersion() ?? '');
 
         return [
-            UrlAttributes::URL_SCHEME => $request->getScheme(),
-            HttpAttributes::HTTP_REQUEST_METHOD => $request->method(),
-            HttpAttributes::HTTP_RESPONSE_STATUS_CODE => $response->getStatusCode(),
-            HttpAttributes::HTTP_ROUTE => $this->resolveRouteName($request),
-            ErrorAttributes::ERROR_TYPE => $response->isOk() ? null : (string) $response->getStatusCode(),
-            NetworkAttributes::NETWORK_PROTOCOL_NAME => 'http',
+            UrlAttributes::URL_SCHEME                   => $request->getScheme(),
+            HttpAttributes::HTTP_REQUEST_METHOD         => $request->method(),
+            HttpAttributes::HTTP_RESPONSE_STATUS_CODE   => $response->getStatusCode(),
+            HttpAttributes::HTTP_ROUTE                  => $this->resolveRouteName($request),
+            ErrorAttributes::ERROR_TYPE                 => $response->isOk() ? null : (string) $response->getStatusCode(),
+            NetworkAttributes::NETWORK_PROTOCOL_NAME    => 'http',
             NetworkAttributes::NETWORK_PROTOCOL_VERSION => match (true) {
-                $protocolVersion->isEmpty() => null,
+                $protocolVersion->isEmpty()     => null,
                 $protocolVersion->contains('/') => $protocolVersion->after('/')->toString(),
-                default => $protocolVersion->toString(),
+                default                         => $protocolVersion->toString(),
             },
             ServerAttributes::SERVER_ADDRESS => $request->getHttpHost(),
-            ServerAttributes::SERVER_PORT => $request->getPort(),
+            ServerAttributes::SERVER_PORT    => $request->getPort(),
         ];
     }
 
     protected function recordHeaders(SpanInterface $span, Request|Response $http): void
     {
         $prefix = match (true) {
-            $http instanceof Request => 'http.request.header.',
+            $http instanceof Request  => 'http.request.header.',
             $http instanceof Response => 'http.response.header.',
         };
 

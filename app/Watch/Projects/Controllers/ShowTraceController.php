@@ -18,10 +18,8 @@ class ShowTraceController extends Controller
 {
     public function __construct(
         private readonly TraceSpansQuery $traceSpansQuery,
-        private readonly TraceLogsQuery  $traceLogsQuery,
-    )
-    {
-    }
+        private readonly TraceLogsQuery $traceLogsQuery,
+    ) {}
 
     public function render(Request $request, Project $project, string $trace): Response
     {
@@ -29,15 +27,13 @@ class ShowTraceController extends Controller
 
         $spans = $this->traceSpansQuery->execute($project, $trace);
 
-        if ($spans->isEmpty()) {
-            throw new NotFoundHttpException;
-        }
+        throw_if($spans->isEmpty(), NotFoundHttpException::class);
 
         return Inertia::render('projects/trace', [
             'project' => new ProjectResource($project),
             'traceId' => $trace,
-            'spans' => $spans->values(),
-            'logs' => $this->traceLogsQuery->execute($project, $trace)->values(),
+            'spans'   => $spans->values(),
+            'logs'    => $this->traceLogsQuery->execute($project, $trace)->values(),
         ]);
     }
 }

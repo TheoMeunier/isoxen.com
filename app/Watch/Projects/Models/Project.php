@@ -47,8 +47,8 @@ class Project extends Model
     protected static function booted(): void
     {
         static::creating(function (Project $project): void {
-            $project->slug ??= Str::slug($project->name) . '-' . Str::lower(Str::random(6));
-            $project->token ??= 'proj_' . Str::random(40);
+            $project->slug  ??= Str::slug($project->name).'-'.Str::lower(Str::random(6));
+            $project->token ??= 'proj_'.Str::random(40);
         });
     }
 }

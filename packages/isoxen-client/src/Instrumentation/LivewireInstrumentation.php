@@ -69,7 +69,7 @@ class LivewireInstrumentation implements Instrumentation
             ->setAttribute(SpanType::ATTRIBUTE, SpanType::Livewire->value)
             ->setAttributes([
                 'component.name' => $component->getName(),
-                'component.id' => $component->getId(),
+                'component.id'   => $component->getId(),
             ])
             ->start();
         $scope = $span->activate();

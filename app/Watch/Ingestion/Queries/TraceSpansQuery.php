@@ -31,7 +31,7 @@ class TraceSpansQuery
             ->map(function (object $row): object {
                 $row->attributes = $row->attributes === null
                     ? null
-                    : json_decode((string)$row->attributes, true);
+                    : json_decode((string) $row->attributes, true);
 
                 return $this->toIso($row, ['time', 'end_time']);
             });

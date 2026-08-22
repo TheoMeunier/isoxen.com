@@ -29,10 +29,10 @@ class WatchServiceProvider extends ServiceProvider
     {
         Gate::policy(Project::class, ProjectPolicy::class);
 
-        OpenTelemetry::user(fn(User $user): array => [
-            'user.id' => $user->id,
+        OpenTelemetry::user(fn (User $user): array => [
+            'user.id'    => $user->id,
             'user.email' => $user->email,
-            'user.name' => $user->name,
+            'user.name'  => $user->name,
         ]);
 
         if ($this->app->runningInConsole()) {

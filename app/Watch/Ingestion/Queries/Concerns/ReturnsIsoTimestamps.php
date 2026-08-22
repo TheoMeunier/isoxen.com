@@ -9,16 +9,16 @@ use Illuminate\Support\Carbon;
 trait ReturnsIsoTimestamps
 {
     /**
-     * @param array<int, string> $columns
+     * @param  array<int, string>  $columns
      */
     protected function toIso(object $row, array $columns = ['time']): object
     {
         foreach ($columns as $column) {
-            if (!property_exists($row, $column) || $row->{$column} === null) {
+            if (! property_exists($row, $column) || $row->{$column} === null) {
                 continue;
             }
 
-            $row->{$column} = Carbon::parse($row->{$column})->format('Y-m-d\TH:i:s.uP');
+            $row->{$column} = \Illuminate\Support\Facades\Date::parse($row->{$column})->format('Y-m-d\TH:i:s.uP');
         }
 
         return $row;

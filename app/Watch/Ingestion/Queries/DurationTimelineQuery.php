@@ -18,12 +18,12 @@ class DurationTimelineQuery
      */
     public function execute(Project $project, ?string $type = null, int $hours = 24): array
     {
-        $since = Carbon::now('UTC')->subHours($hours - 1)->startOfHour();
+        $since  = \Illuminate\Support\Facades\Date::now('UTC')->subHours($hours - 1)->startOfHour();
         $bucket = $this->bucketExpression();
 
         $averages = DB::table('otel_spans')
             ->where('project_id', $project->id)
-            ->when($type !== null, fn($query) => $query->where('type', $type))
+            ->when($type !== null, fn ($query) => $query->where('type', $type))
             ->where('time', '>=', $since)
             ->whereNotNull('duration_nanos')
             ->groupByRaw($bucket)
@@ -33,13 +33,13 @@ class DurationTimelineQuery
         $series = [];
 
         for ($hour = 0; $hour < $hours; $hour++) {
-            $at = $since->copy()->addHours($hour);
-            $key = $at->format('Y-m-d H:00');
+            $at    = $since->copy()->addHours($hour);
+            $key   = $at->format('Y-m-d H:00');
             $nanos = $averages[$key] ?? null;
 
             $series[] = [
-                'at' => $at->toIso8601String(),
-                'avg_ms' => $nanos === null ? null : round((float)$nanos / 1_000_000, 1),
+                'at'     => $at->toIso8601String(),
+                'avg_ms' => $nanos === null ? null : round((float) $nanos / 1_000_000, 1),
             ];
         }
 

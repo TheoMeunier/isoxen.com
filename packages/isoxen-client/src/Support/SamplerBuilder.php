@@ -10,9 +10,9 @@ use OpenTelemetry\SDK\Trace\SamplerInterface;
 
 final class SamplerBuilder
 {
-    public static function new(): SamplerBuilder
+    public static function new(): self
     {
-        return new SamplerBuilder;
+        return new self;
     }
 
     public function build(string $sampler, bool $parentBased = false, array $args = []): SamplerInterface
@@ -29,9 +29,9 @@ final class SamplerBuilder
     protected function buildSampler(string $name, array $args): SamplerInterface
     {
         return match ($name) {
-            'always_on' => new AlwaysOnSampler,
+            'always_on'    => new AlwaysOnSampler,
             'traceidratio' => new TraceIdRatioBasedSampler($args['ratio'] ?? 0.05),
-            default => new AlwaysOffSampler,
+            default        => new AlwaysOffSampler,
         };
     }
 }

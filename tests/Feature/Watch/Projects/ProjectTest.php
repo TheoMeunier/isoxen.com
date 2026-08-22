@@ -22,17 +22,18 @@ test('guests are redirected to the login page from every project route', functio
 // --- Listing ---
 
 test('the project list only contains the authenticated user\'s projects', function () {
-    $user = User::factory()->create();
+    $user       = User::factory()->create();
     $ownProject = Project::factory()->for($user)->create();
     Project::factory()->create();
 
     $this->actingAs($user)
         ->get(route('projects.index'))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/index')
-            ->has('projects', 1)
-            ->where('projects.0.id', $ownProject->id)
+        ->assertInertia(
+            fn (Assert $page) => $page
+                ->component('projects/index')
+                ->has('projects', 1)
+                ->where('projects.0.id', $ownProject->id)
         );
 });
 
@@ -42,8 +43,9 @@ test('the project list does not expose the ingestion token', function () {
 
     $this->actingAs($user)
         ->get(route('projects.index'))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('projects.0.token', null)
+        ->assertInertia(
+            fn (Assert $page) => $page
+                ->where('projects.0.token', null)
         );
 });
 
@@ -89,21 +91,22 @@ test('a project name cannot exceed 255 characters', function () {
 // --- Showing ---
 
 test('an owner can view their project, including its ingestion token', function () {
-    $user = User::factory()->create();
+    $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/show/activity')
-            ->where('project.id', $project->id)
-            ->where('project.token', $project->token)
+        ->assertInertia(
+            fn (Assert $page) => $page
+                ->component('projects/show/activity')
+                ->where('project.id', $project->id)
+                ->where('project.token', $project->token)
         );
 });
 
 test('a user cannot view another user\'s project', function () {
-    $project = Project::factory()->create();
+    $project  = Project::factory()->create();
     $intruder = User::factory()->create();
 
     $this->actingAs($intruder)
@@ -114,7 +117,7 @@ test('a user cannot view another user\'s project', function () {
 // --- Updating ---
 
 test('an owner can update their project', function () {
-    $user = User::factory()->create();
+    $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();
 
     $response = $this
@@ -131,7 +134,7 @@ test('an owner can update their project', function () {
 });
 
 test('a project name is required to update a project', function () {
-    $user = User::factory()->create();
+    $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();
 
     $this->actingAs($user)
@@ -140,7 +143,7 @@ test('a project name is required to update a project', function () {
 });
 
 test('a user cannot update another user\'s project', function () {
-    $project = Project::factory()->create();
+    $project  = Project::factory()->create();
     $intruder = User::factory()->create();
 
     $this->actingAs($intruder)
@@ -153,7 +156,7 @@ test('a user cannot update another user\'s project', function () {
 // --- Deleting ---
 
 test('an owner can delete their project', function () {
-    $user = User::factory()->create();
+    $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();
 
     $response = $this
@@ -168,7 +171,7 @@ test('an owner can delete their project', function () {
 });
 
 test('a user cannot delete another user\'s project', function () {
-    $project = Project::factory()->create();
+    $project  = Project::factory()->create();
     $intruder = User::factory()->create();
 
     $this->actingAs($intruder)

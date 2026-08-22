@@ -31,35 +31,33 @@ class ShowProjectController extends Controller
      *
      * @var array<string, array{success: string, failure: string}>
      */
-    private const STATUS_LABELS = [
-        'jobs' => ['success' => 'Processed', 'failure' => 'Failed'],
+    private const array STATUS_LABELS = [
+        'jobs'     => ['success' => 'Processed', 'failure' => 'Failed'],
         'commands' => ['success' => 'Successful', 'failure' => 'Unsuccessful'],
     ];
 
-    private const DEFAULT_STATUS_LABELS = ['success' => 'Successful', 'failure' => 'Errors'];
+    private const array DEFAULT_STATUS_LABELS = ['success' => 'Successful', 'failure' => 'Errors'];
 
     public function __construct(
-        private readonly RecentSpansQuery            $recentSpansQuery,
-        private readonly RecentMetricsQuery          $recentMetricsQuery,
-        private readonly RecentLogsQuery             $recentLogsQuery,
-        private readonly ActivityTimelineQuery       $activityTimelineQuery,
-        private readonly DurationTimelineQuery       $durationTimelineQuery,
-        private readonly CategorySummaryQuery        $categorySummaryQuery,
-        private readonly SlowEndpointsQuery          $slowEndpointsQuery,
+        private readonly RecentSpansQuery $recentSpansQuery,
+        private readonly RecentMetricsQuery $recentMetricsQuery,
+        private readonly RecentLogsQuery $recentLogsQuery,
+        private readonly ActivityTimelineQuery $activityTimelineQuery,
+        private readonly DurationTimelineQuery $durationTimelineQuery,
+        private readonly CategorySummaryQuery $categorySummaryQuery,
+        private readonly SlowEndpointsQuery $slowEndpointsQuery,
         private readonly RequestStatusBreakdownQuery $requestStatusBreakdownQuery,
-        private readonly LogSeverityBreakdownQuery   $logSeverityBreakdownQuery,
-        private readonly StatusTimelineQuery         $statusTimelineQuery,
-        private readonly OnlineUsersQuery            $onlineUsersQuery,
-    )
-    {
-    }
+        private readonly LogSeverityBreakdownQuery $logSeverityBreakdownQuery,
+        private readonly StatusTimelineQuery $statusTimelineQuery,
+        private readonly OnlineUsersQuery $onlineUsersQuery,
+    ) {}
 
     public function redirectToDefaultCategory(Project $project): RedirectResponse
     {
         $this->authorize('view', $project);
 
-        return redirect()->route('projects.show', [
-            'project' => $project,
+        return to_route('projects.show', [
+            'project'  => $project,
             'category' => ObservabilityCategories::default(),
         ]);
     }
@@ -72,9 +70,7 @@ class ShowProjectController extends Controller
             return $this->renderInformation($project);
         }
 
-        if (!ObservabilityCategories::isValid($category)) {
-            abort(404);
-        }
+        abort_unless(ObservabilityCategories::isValid($category), 404);
 
         if ($category === 'users') {
             return $this->renderUsers($project);
@@ -93,37 +89,37 @@ class ShowProjectController extends Controller
     private function renderUsers(Project $project): Response
     {
         return Inertia::render('projects/show/users', [
-            'project' => new ProjectResource($project),
-            'onlineUsers' => fn() => $this->onlineUsersQuery->execute($project),
+            'project'     => new ProjectResource($project),
+            'onlineUsers' => fn (): array => $this->onlineUsersQuery->execute($project),
         ]);
     }
 
     private function renderActivity(Project $project, string $categorySlug): Response
     {
         $category = ObservabilityCategories::get($categorySlug);
-        $table = ObservabilityCategories::table($categorySlug);
+        $table    = ObservabilityCategories::table($categorySlug);
 
-        $summary = null;
-        $resolveSummary = function () use (&$summary, $project, $table, $category) {
+        $summary        = null;
+        $resolveSummary = function () use (&$summary, $project, $table, $category): array {
             return $summary ??= $this->categorySummaryQuery->execute($project, $table, $category['type']);
         };
 
         return Inertia::render('projects/show/activity', [
-            'project' => new ProjectResource($project),
+            'project'        => new ProjectResource($project),
             'activeCategory' => $categorySlug,
-            'entries' => fn() => match ($category['source']) {
+            'entries'        => fn (): \Illuminate\Pagination\LengthAwarePaginator => match ($category['source']) {
                 'metrics' => $this->recentMetricsQuery->execute($project),
-                'logs' => $this->recentLogsQuery->execute($project),
-                default => $this->recentSpansQuery->execute($project, $category['type']),
+                'logs'    => $this->recentLogsQuery->execute($project),
+                default   => $this->recentSpansQuery->execute($project, $category['type']),
             },
-            'summary' => $resolveSummary,
-            'timeline' => fn() => $this->activityTimelineQuery->execute($project, $table, $category['type']),
-            'durationTimeline' => fn() => $table === 'otel_spans'
+            'summary'          => $resolveSummary,
+            'timeline'         => fn (): array => $this->activityTimelineQuery->execute($project, $table, $category['type']),
+            'durationTimeline' => fn (): array => $table === 'otel_spans'
                 ? $this->durationTimelineQuery->execute($project, $category['type'])
                 : [],
-            'statusBreakdown' => fn() => $this->statusBreakdown($project, $categorySlug, $table, $resolveSummary()),
-            'statusTimeline' => fn() => $this->statusTimeline($project, $categorySlug, $table, $category['type']),
-            'slowEndpoints' => fn() => $categorySlug === 'requests'
+            'statusBreakdown' => fn (): array => $this->statusBreakdown($project, $categorySlug, $table, $resolveSummary()),
+            'statusTimeline'  => fn (): array => $this->statusTimeline($project, $categorySlug, $table, $category['type']),
+            'slowEndpoints'   => fn (): \Illuminate\Support\Collection => $categorySlug === 'requests'
                 ? $this->slowEndpointsQuery->execute($project)
                 : collect(),
         ]);
@@ -176,8 +172,8 @@ class ShowProjectController extends Controller
     private function statusTimeline(Project $project, string $categorySlug, string $table, ?string $type): array
     {
         if ($categorySlug === 'requests') {
-            return array_map(fn(array $hour): array => [
-                'at' => $hour['at'],
+            return array_map(fn (array $hour): array => [
+                'at'       => $hour['at'],
                 'segments' => [
                     ['label' => '1XX-3XX', 'value' => $hour['success'], 'tone' => 'neutral'],
                     ['label' => '4XX', 'value' => $hour['client_error'], 'tone' => 'warning'],
@@ -187,8 +183,8 @@ class ShowProjectController extends Controller
         }
 
         if ($categorySlug === 'logs') {
-            return array_map(fn(array $hour): array => [
-                'at' => $hour['at'],
+            return array_map(fn (array $hour): array => [
+                'at'       => $hour['at'],
                 'segments' => [
                     ['label' => 'Info', 'value' => $hour['info'], 'tone' => 'neutral'],
                     ['label' => 'Warning', 'value' => $hour['warning'], 'tone' => 'warning'],
@@ -203,8 +199,8 @@ class ShowProjectController extends Controller
 
         $labels = self::STATUS_LABELS[$categorySlug] ?? self::DEFAULT_STATUS_LABELS;
 
-        return array_map(fn(array $hour): array => [
-            'at' => $hour['at'],
+        return array_map(fn (array $hour): array => [
+            'at'       => $hour['at'],
             'segments' => [
                 ['label' => $labels['success'], 'value' => $hour['success'], 'tone' => 'neutral'],
                 ['label' => $labels['failure'], 'value' => $hour['error'], 'tone' => 'critical'],

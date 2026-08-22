@@ -68,11 +68,11 @@ class HandleInertiaRequests extends Middleware
 
         return [
             'currentProject' => [
-                'id' => $project->id,
+                'id'   => $project->id,
                 'name' => $project->name,
                 'slug' => $project->slug,
             ],
-            'categoryCounts' => app(SpanTypeCountsQuery::class)->execute($project),
+            'categoryCounts'          => resolve(SpanTypeCountsQuery::class)->execute($project),
             'observabilityCategories' => ObservabilityCategories::all(),
         ];
     }

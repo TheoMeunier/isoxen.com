@@ -60,15 +60,15 @@ class LogInstrumentation implements Instrumentation
     private function severity(string $level): Severity
     {
         return match (strtolower($level)) {
-            'debug' => Severity::DEBUG,
-            'info' => Severity::INFO,
-            'notice' => Severity::INFO2,
-            'warning' => Severity::WARN,
-            'error' => Severity::ERROR,
-            'critical' => Severity::ERROR2,
-            'alert' => Severity::ERROR3,
+            'debug'     => Severity::DEBUG,
+            'info'      => Severity::INFO,
+            'notice'    => Severity::INFO2,
+            'warning'   => Severity::WARN,
+            'error'     => Severity::ERROR,
+            'critical'  => Severity::ERROR2,
+            'alert'     => Severity::ERROR3,
             'emergency' => Severity::FATAL,
-            default => Severity::INFO,
+            default     => Severity::INFO,
         };
     }
 
@@ -86,8 +86,8 @@ class LogInstrumentation implements Instrumentation
             // information survives even if its shape doesn't.
             $attributes["log.context.{$key}"] = match (true) {
                 is_scalar($value), $value === null => $value,
-                $value instanceof \Throwable => $value->getMessage(),
-                default => json_encode($value),
+                $value instanceof \Throwable       => $value->getMessage(),
+                default                            => json_encode($value),
             };
         }
 

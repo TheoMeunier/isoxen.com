@@ -20,14 +20,14 @@ function otlpMetricsPayload(): array
                     [
                         'metrics' => [
                             [
-                                'name' => 'http.server.duration',
-                                'unit' => 'ms',
+                                'name'  => 'http.server.duration',
+                                'unit'  => 'ms',
                                 'gauge' => [
                                     'dataPoints' => [
                                         [
                                             'timeUnixNano' => '1660296023390000000',
-                                            'asDouble' => 42.5,
-                                            'attributes' => [
+                                            'asDouble'     => 42.5,
+                                            'attributes'   => [
                                                 ['key' => 'http.route', 'value' => ['stringValue' => '/orders']],
                                             ],
                                         ],
@@ -69,8 +69,8 @@ test('the store metrics job inserts one row per data point', function () {
 
     $this->assertDatabaseHas('otel_metrics', [
         'project_id' => $project->id,
-        'name' => 'http.server.duration',
-        'type' => 'gauge',
-        'value' => 42.5,
+        'name'       => 'http.server.duration',
+        'type'       => 'gauge',
+        'value'      => 42.5,
     ]);
 });

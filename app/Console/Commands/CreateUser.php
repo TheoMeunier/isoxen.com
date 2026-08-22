@@ -15,8 +15,8 @@ class CreateUser extends Command
 {
     public function handle(): int
     {
-        $name = $this->ask('Username');
-        $email = $this->ask('Email');
+        $name     = $this->ask('Username');
+        $email    = $this->ask('Email');
         $password = $this->secret('Password');
 
         if (empty($password)) {
@@ -27,8 +27,8 @@ class CreateUser extends Command
         $validator = Validator::make(
             ['name' => $name, 'email' => $email, 'password' => $password],
             [
-                'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'name'     => ['required', 'string', 'max:255'],
+                'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'password' => ['required', 'string', 'min:8'],
             ]
         );
@@ -43,9 +43,9 @@ class CreateUser extends Command
         }
 
         $user = User::query()->create([
-            'name' => $name,
-            'email' => $email,
-            'password' => Hash::make($password),
+            'name'              => $name,
+            'email'             => $email,
+            'password'          => Hash::make($password),
             'email_verified_at' => now(),
         ]);
 

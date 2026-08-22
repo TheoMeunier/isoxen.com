@@ -37,7 +37,9 @@ class DoctorCommand extends Command
      */
     private int $problems = 0;
 
-    /** Payloads already waiting on the queue when this ran. */
+    /**
+     * Payloads already waiting on the queue when this ran.
+     */
     private int $pending = 0;
 
     public function handle(): int
@@ -71,7 +73,7 @@ class DoctorCommand extends Command
     {
         $this->components->info('Configuration');
 
-        $token = (string) config('isoxen.token');
+        $token    = (string) config('isoxen.token');
         $endpoint = (string) config('isoxen.endpoint');
 
         $this->components->twoColumnDetail('enabled', config('isoxen.enabled') ? '<fg=green>yes</>' : '<fg=red>no — nothing will be sent</>');
@@ -127,7 +129,7 @@ class DoctorCommand extends Command
         foreach ([
             'tracer' => Globals::tracerProvider(),
             'logger' => Globals::loggerProvider(),
-            'meter' => Globals::meterProvider(),
+            'meter'  => Globals::meterProvider(),
         ] as $label => $provider) {
             $name = class_basename($provider);
             $noop = str_contains($name, 'Noop');
@@ -157,7 +159,7 @@ class DoctorCommand extends Command
         $this->components->info('Ingestion round trip');
 
         $endpoint = rtrim((string) config('isoxen.endpoint'), '/');
-        $token = (string) config('isoxen.token');
+        $token    = (string) config('isoxen.token');
 
         if ($endpoint === '' || $token === '') {
             $this->components->twoColumnDetail('POST /v1/traces', '<fg=red>skipped — endpoint or token missing</>');
@@ -202,8 +204,8 @@ class DoctorCommand extends Command
             $status === 404 => 'The OTLP routes are not registered on this endpoint.',
             $status === 415 => 'The endpoint rejected JSON — it expects a different content type.',
             $status === 419 => 'The request hit the stateful `web` middleware group; OTLP routes need `api`.',
-            $status >= 500 => 'The endpoint errored — check its own logs.',
-            default => null,
+            $status >= 500  => 'The endpoint errored — check its own logs.',
+            default         => null,
         };
 
         if ($hint !== null) {
@@ -257,8 +259,8 @@ class DoctorCommand extends Command
             unit: 's',
             description: 'Duration of HTTP server requests.',
         )->record(0.123, [
-            'http.request.method' => 'GET',
-            'http.route' => 'isoxen/doctor',
+            'http.request.method'       => 'GET',
+            'http.route'                => 'isoxen/doctor',
             'http.response.status_code' => 200,
         ]);
 

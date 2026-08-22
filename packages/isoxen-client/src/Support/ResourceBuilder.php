@@ -17,7 +17,7 @@ class ResourceBuilder
     {
         return ResourceInfoFactory::defaultResource()->merge(
             ResourceInfo::create(Attributes::create([
-                ServiceAttributes::SERVICE_NAME => config('isoxen.service_name'),
+                ServiceAttributes::SERVICE_NAME                  => config('isoxen.service_name'),
                 ServiceIncubatingAttributes::SERVICE_INSTANCE_ID => config('isoxen.service_instance_id'),
                 ...config('isoxen.resource_attributes', []),
             ]))

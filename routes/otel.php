@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Watch\Ingestion\Controllers\IngestLogsController;
 use App\Watch\Ingestion\Controllers\IngestMetricsController;
 use App\Watch\Ingestion\Controllers\IngestTracesController;

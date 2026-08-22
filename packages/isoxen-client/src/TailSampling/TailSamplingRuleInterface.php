@@ -5,7 +5,7 @@ namespace Isoxen\Client\TailSampling;
 interface TailSamplingRuleInterface
 {
     /**
-     * Initialize the rule with options from config
+     * Initialize the rule with options from config.
      */
     public function initialize(array $options): void;
 

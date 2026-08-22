@@ -72,7 +72,8 @@ class RedisInstrumentation implements Instrumentation
             description: 'Duration of database client operations.',
             advisory: [
                 'ExplicitBucketBoundaries' => [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0],
-            ])
+            ]
+        )
             ->record($duration, $attributes);
     }
 
@@ -82,10 +83,10 @@ class RedisInstrumentation implements Instrumentation
     protected function sharedTraceMetricAttributes(CommandExecuted $event, string $operationName): array
     {
         return [
-            DbAttributes::DB_SYSTEM_NAME => 'redis',
-            DbAttributes::DB_OPERATION_NAME => $operationName,
-            DbAttributes::DB_NAMESPACE => $this->resolveDbIndex($event->connectionName),
-            DbAttributes::DB_QUERY_TEXT => Str::limit($this->formatCommand($event->command, $event->parameters), 500),
+            DbAttributes::DB_SYSTEM_NAME     => 'redis',
+            DbAttributes::DB_OPERATION_NAME  => $operationName,
+            DbAttributes::DB_NAMESPACE       => $this->resolveDbIndex($event->connectionName),
+            DbAttributes::DB_QUERY_TEXT      => Str::limit($this->formatCommand($event->command, $event->parameters), 500),
             ServerAttributes::SERVER_ADDRESS => $this->resolveRedisAddress($event->connection->client()),
         ];
     }

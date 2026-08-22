@@ -14,9 +14,7 @@ class DeleteProjectController extends Controller
 {
     public function __construct(
         private readonly DeleteProjectAction $deleteProjectAction,
-    )
-    {
-    }
+    ) {}
 
     public function execute(Project $project): RedirectResponse
     {
