@@ -3,6 +3,7 @@
 namespace App\Core\Middleware;
 
 use App\Watch\Ingestion\Queries\SpanTypeCountsQuery;
+use App\Watch\Ingestion\Support\ObservabilityCategories;
 use App\Watch\Projects\Models\Project;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -56,6 +57,12 @@ class HandleInertiaRequests extends Middleware
      * allowed to view it, so this costs one extra count query on project
      * pages and nothing anywhere else.
      *
+     * `observabilityCategories` is the same PHP-side list the {category}
+     * route constraint validates against (see ObservabilityCategories and
+     * routes/projects.php) -- sharing it here is what lets the sidebar build
+     * its nav from the backend's list instead of keeping its own hardcoded
+     * copy.
+     *
      * @return array<string, mixed>
      */
     private function projectContext(Request $request): array
@@ -77,6 +84,7 @@ class HandleInertiaRequests extends Middleware
                 'slug' => $project->slug,
             ],
             'categoryCounts' => app(SpanTypeCountsQuery::class)->execute($project),
+            'observabilityCategories' => ObservabilityCategories::all(),
         ];
     }
 }

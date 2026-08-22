@@ -20,15 +20,25 @@ function makeSpan(int $projectId, ?string $type, string $name = 'span'): void
     ]);
 }
 
-test('the project page defaults to the requests category', function () {
+test('a bare project URL redirects to its default category', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->get(route('projects.show-redirect', $project))
+        ->assertRedirect(route('projects.show', ['project' => $project, 'category' => 'requests']));
+});
+
+test('the requests category is the project\'s default view', function () {
     $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();
     makeSpan($project->id, 'request', 'GET /orders');
     makeSpan($project->id, 'query', 'select * from orders');
 
     $this->actingAs($user)
-        ->get(route('projects.show', $project))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertInertia(fn (Assert $page) => $page
+            ->component('projects/show/activity')
             ->where('activeCategory', 'requests')
             ->has('entries.data', 1)
             ->where('entries.data.0.name', 'GET /orders'));
@@ -41,7 +51,7 @@ test('switching category filters spans by their type', function () {
     makeSpan($project->id, 'query', 'select * from orders');
 
     $this->actingAs($user)
-        ->get(route('projects.show', $project, ['category' => 'queries']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'queries']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('activeCategory', 'queries')
             ->has('entries.data', 1)
@@ -66,7 +76,7 @@ test('the queries category exposes the full SQL as detail', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'queries']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'queries']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('entries.data.0.name', 'SELECT')
             ->where('entries.data.0.detail', 'select * from `orders` where `id` = ?'));
@@ -91,7 +101,7 @@ test('the outgoing requests category exposes the full URL as detail', function (
     ]);
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'outgoing-requests']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'outgoing-requests']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('entries.data.0.detail', 'GET https://api.stripe.com/v1/charges?limit=10'));
 });
@@ -115,7 +125,7 @@ test('the cache category exposes the operation and key as detail', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'cache']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'cache']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('entries.data.0.name', 'cache hit')
             ->where('entries.data.0.detail', 'hit orders:by-customer:42'));
@@ -127,37 +137,38 @@ test('other categories never expose a detail field', function () {
     makeSpan($project->id, 'request', 'GET /orders');
 
     $this->actingAs($user)
-        ->get(route('projects.show', $project))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertInertia(fn (Assert $page) => $page
             ->missing('entries.data.0.detail'));
 });
 
-test('an unknown category falls back to requests', function () {
+test('an unknown category returns a 404', function () {
     $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();
 
+    // Built by hand rather than through route(): the {category} route
+    // constraint (see routes/projects.php) validates against
+    // ObservabilityCategories, so route() would refuse to generate a URL
+    // for a slug that isn't in that list.
     $this->actingAs($user)
-        ->get(route('projects.show', $project, ['category' => 'not-a-real-category']))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('activeCategory', 'requests'));
+        ->get("/projects/{$project->id}/not-a-real-category")
+        ->assertNotFound();
 });
 
-test('the information tab skips the activity pipeline entirely', function () {
+test('the information page renders the project without the activity pipeline', function () {
     $user    = User::factory()->create();
     $project = Project::factory()->for($user)->create();
     makeSpan($project->id, 'request', 'GET /orders');
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'information']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'information']))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('activeCategory', 'information')
-            ->has('entries.data', 0)
-            ->where('summary.total', 0)
-            ->has('timeline', 0)
-            ->has('durationTimeline', 0)
-            ->has('statusBreakdown', 0)
-            ->has('statusTimeline', 0)
-            ->has('slowEndpoints', 0));
+            ->component('projects/show/information')
+            ->where('project.id', $project->id)
+            ->missing('entries')
+            ->missing('summary')
+            ->missing('timeline')
+            ->missing('onlineUsers'));
 });
 
 test('the users category reports who is currently online', function () {
@@ -180,8 +191,9 @@ test('the users category reports who is currently online', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'users']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'users']))
         ->assertInertia(fn (Assert $page) => $page
+            ->component('projects/show/users')
             ->has('onlineUsers', 1)
             ->where('onlineUsers.0.id', '42')
             ->where('onlineUsers.0.email', 'jane@example.com'));
@@ -222,7 +234,7 @@ test('a user is only online if their most recent event is a login', function () 
     $insert('2', 'login', now()->subMinutes(1));
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'users']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'users']))
         ->assertInertia(fn (Assert $page) => $page
             ->has('onlineUsers', 1)
             ->where('onlineUsers.0.id', '2'));
@@ -234,9 +246,9 @@ test('other categories do not compute who is online', function () {
     makeSpan($project->id, 'request', 'GET /orders');
 
     $this->actingAs($user)
-        ->get(route('projects.show', $project))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertInertia(fn (Assert $page) => $page
-            ->has('onlineUsers', 0));
+            ->missing('onlineUsers'));
 });
 
 test('the sidebar counts are grouped by span type', function () {
@@ -248,7 +260,7 @@ test('the sidebar counts are grouped by span type', function () {
     makeSpan($project->id, null, 'uncategorized');
 
     $this->actingAs($user)
-        ->get(route('projects.show', $project))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('categoryCounts.request', 2)
             ->where('categoryCounts.query', 1));

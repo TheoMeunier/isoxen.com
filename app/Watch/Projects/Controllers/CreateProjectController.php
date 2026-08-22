@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Watch\Projects\Controllers;
 
 use App\Core\Controllers\Controller;
+use App\Watch\Ingestion\Support\ObservabilityCategories;
 use App\Watch\Projects\Actions\CreateProjectAction;
 use App\Watch\Projects\Models\Project;
 use App\Watch\Projects\Requests\CreateProjectRequest;
@@ -28,6 +29,9 @@ class CreateProjectController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created.')]);
 
-        return to_route('projects.show', $project);
+        return to_route('projects.show', [
+            'project'  => $project,
+            'category' => ObservabilityCategories::default(),
+        ]);
     }
 }

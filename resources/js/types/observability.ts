@@ -118,3 +118,20 @@ export type ObservabilityCategory =
     | 'metrics'
     | 'users'
     | 'logs';
+/**
+ * One entry of ObservabilityCategories::all() (app/Watch/Ingestion/Support/
+ * ObservabilityCategories.php), shared to every project-bound page via
+ * HandleInertiaRequests so the sidebar can build its nav from the backend's
+ * list instead of keeping its own hardcoded copy.
+ */
+export type ObservabilityCategoryDefinition = {
+    group: 'activity' | 'monitoring';
+    label: string;
+    source: 'span' | 'logs' | 'metrics';
+    type: string | null;
+    enabled: boolean;
+};
+export type ObservabilityCategories = Record<
+    ObservabilityCategory,
+    ObservabilityCategoryDefinition
+>;

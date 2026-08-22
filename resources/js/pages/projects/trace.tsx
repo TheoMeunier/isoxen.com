@@ -135,8 +135,9 @@ export default function ProjectsTrace({
 
             <div className="flex flex-1 flex-col gap-6 p-4">
                 <Link
-                    href={show.url(project.id, {
-                        query: { category: backCategory },
+                    href={show({
+                        project: project.id,
+                        category: backCategory,
                     })}
                     className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
                 >
@@ -322,7 +323,7 @@ ProjectsTrace.layout = (page: { project: Project }) => ({
         },
         {
             title: page.project.name,
-            href: show(page.project.id),
+            href: show({ project: page.project.id, category: 'requests' }),
         },
     ],
 });

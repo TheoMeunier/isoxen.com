@@ -106,7 +106,10 @@ export default function ProjectsIndex({ projects }: { projects: Project[] }) {
                         {projects.map((project) => (
                             <Link
                                 key={project.id}
-                                href={show(project.id)}
+                                href={show({
+                                    project: project.id,
+                                    category: 'requests',
+                                })}
                                 className="rounded-xl border border-sidebar-border/70 p-4 transition-colors hover:bg-sidebar-accent dark:border-sidebar-border"
                             >
                                 <p className="font-medium">{project.name}</p>

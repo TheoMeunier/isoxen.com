@@ -13,7 +13,8 @@ test('guests are redirected to the login page from every project route', functio
 
     $this->get(route('projects.index'))->assertRedirect(route('login'));
     $this->post(route('projects.store'), ['name' => 'My website'])->assertRedirect(route('login'));
-    $this->get(route('projects.show', $project))->assertRedirect(route('login'));
+    $this->get(route('projects.show-redirect', $project))->assertRedirect(route('login'));
+    $this->get(route('projects.show', ['project' => $project, 'category' => 'requests']))->assertRedirect(route('login'));
     $this->put(route('projects.update', $project), ['name' => 'Renamed'])->assertRedirect(route('login'));
     $this->delete(route('projects.destroy', $project))->assertRedirect(route('login'));
 });
@@ -59,7 +60,7 @@ test('a project can be created', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('projects.show', $project));
+        ->assertRedirect(route('projects.show', ['project' => $project, 'category' => 'requests']));
 
     expect($project->name)->toBe('My website');
     expect($project->slug)->not->toBeEmpty();
@@ -92,10 +93,10 @@ test('an owner can view their project, including its ingestion token', function 
     $project = Project::factory()->for($user)->create();
 
     $this->actingAs($user)
-        ->get(route('projects.show', $project))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/show')
+            ->component('projects/show/activity')
             ->where('project.id', $project->id)
             ->where('project.token', $project->token)
         );
@@ -106,7 +107,7 @@ test('a user cannot view another user\'s project', function () {
     $intruder = User::factory()->create();
 
     $this->actingAs($intruder)
-        ->get(route('projects.show', $project))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertForbidden();
 });
 
@@ -124,7 +125,7 @@ test('an owner can update their project', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('projects.show', $project));
+        ->assertRedirect(route('projects.show', ['project' => $project, 'category' => 'requests']));
 
     expect($project->fresh()->name)->toBe('Renamed project');
 });

@@ -19,8 +19,8 @@ use App\Watch\Ingestion\Queries\StatusTimelineQuery;
 use App\Watch\Ingestion\Support\ObservabilityCategories;
 use App\Watch\Projects\Models\Project;
 use App\Watch\Projects\Resources\ProjectResource;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,64 +57,102 @@ class ShowProjectController extends Controller
     ) {}
 
     /**
-     * Render the given project, including its ingestion token and the most
-     * recent entries for the active sidebar category (Requests, Jobs,
-     * Queries, ...).
+     * A bare project URL -- no category segment, e.g. an old bookmark or a
+     * link built before categories moved into the path -- redirects to the
+     * project's default category instead of 404ing.
      */
-    public function render(Request $request, Project $project): Response
+    public function redirectToDefaultCategory(Project $project): RedirectResponse
     {
         $this->authorize('view', $project);
 
-        $categorySlug = $request->query('category');
+        return redirect()->route('projects.show', [
+            'project'  => $project,
+            'category' => ObservabilityCategories::default(),
+        ]);
+    }
+
+    /**
+     * Render the project's active category (Requests, Jobs, Queries, ..., or
+     * the pseudo-categories Information/Users), dispatching to whichever of
+     * the three page templates that category needs.
+     */
+    public function render(Request $request, Project $project, string $category): Response
+    {
+        $this->authorize('view', $project);
 
         // Information isn't an observability category -- there's no span,
         // log, or metric behind it, just the project's own settings (rename,
-        // ingestion token, delete). It renders the same page with the
-        // activity pipeline below skipped entirely, rather than teaching
-        // ObservabilityCategories about a "category" that carries no
-        // telemetry.
-        if ($categorySlug === 'information') {
-            return Inertia::render('projects/show', [
-                'project'          => new ProjectResource($project),
-                'activeCategory'   => 'information',
-                'entries'          => new LengthAwarePaginator([], 0, 25),
-                'summary'          => ['total' => 0, 'errors' => null, 'slowest_ms' => null, 'avg_ms' => null, 'hours' => 24],
-                'timeline'         => [],
-                'durationTimeline' => [],
-                'statusBreakdown'  => [],
-                'statusTimeline'   => [],
-                'slowEndpoints'    => [],
-                'onlineUsers'      => [],
-            ]);
+        // ingestion token, delete). ObservabilityCategories doesn't know
+        // about it for that reason, so it's handled before the validity
+        // check below rather than being taught to that class.
+        if ($category === 'information') {
+            return $this->renderInformation($project);
         }
 
-        $categorySlug = is_string($categorySlug) && ObservabilityCategories::isValid($categorySlug)
-            ? $categorySlug
-            : ObservabilityCategories::default();
+        // The route's {category} constraint (see routes/projects.php)
+        // already rejects anything not in ObservabilityCategories::all() or
+        // 'information' above before a request gets here -- this is defense
+        // in depth, not the primary guard.
+        if (! ObservabilityCategories::isValid($category)) {
+            abort(404);
+        }
 
+        if ($category === 'users') {
+            return $this->renderUsers($project);
+        }
+
+        return $this->renderActivity($project, $category);
+    }
+
+    /**
+     * The Information tab: the project's own settings. There's no telemetry
+     * behind it, so none of the activity pipeline below runs and none of its
+     * props are sent.
+     */
+    private function renderInformation(Project $project): Response
+    {
+        return Inertia::render('projects/show/information', [
+            'project' => new ProjectResource($project),
+        ]);
+    }
+
+    /**
+     * The Users tab: who's currently online, nothing else. Polled on its own
+     * (see projects/show/users.tsx, `router.reload({ only: ['onlineUsers'] })`),
+     * which is cheap now that this route only ever computes this one query.
+     */
+    private function renderUsers(Project $project): Response
+    {
+        return Inertia::render('projects/show/users', [
+            'project'     => new ProjectResource($project),
+            'onlineUsers' => fn () => $this->onlineUsersQuery->execute($project),
+        ]);
+    }
+
+    /**
+     * The 11 telemetry categories (Requests, Jobs, Commands, Scheduled
+     * Tasks, Exceptions, Queries, Notifications, Mail, Cache, Outgoing
+     * Requests, Metrics): the shared entries/summary/timeline pipeline every
+     * one of them renders through the same activity template.
+     *
+     * `currentProject` and `categoryCounts` power the app sidebar and are
+     * shared for every project-bound route by HandleInertiaRequests, so they
+     * aren't repeated here.
+     */
+    private function renderActivity(Project $project, string $categorySlug): Response
+    {
         $category = ObservabilityCategories::get($categorySlug);
         $table    = ObservabilityCategories::table($categorySlug);
 
         // Memoized rather than called directly from both the `summary` and
-        // `statusBreakdown` closures below: on a full load both run, and
-        // without this they'd each re-execute CategorySummaryQuery.
+        // `statusBreakdown` closures below: without this they'd each
+        // re-execute CategorySummaryQuery.
         $summary        = null;
         $resolveSummary = function () use (&$summary, $project, $table, $category) {
             return $summary ??= $this->categorySummaryQuery->execute($project, $table, $category['type']);
         };
 
-        // `currentProject` and `categoryCounts` power the app sidebar and
-        // are shared for every project-bound route by
-        // HandleInertiaRequests, so they aren't repeated here.
-        //
-        // Every prop below is a Closure, not a plain value: the Users tab
-        // polls this same route for `onlineUsers` alone (see
-        // projects/show.tsx), and Inertia only invokes a Closure prop when
-        // it's actually going into the response. Plain values are computed
-        // by PHP regardless of what the request asked for, which would
-        // make each poll silently redo the entries/timeline/slow-endpoints
-        // queries too.
-        return Inertia::render('projects/show', [
+        return Inertia::render('projects/show/activity', [
             'project'        => new ProjectResource($project),
             'activeCategory' => $categorySlug,
             'entries'        => fn () => match ($category['source']) {
@@ -139,10 +177,6 @@ class ShowProjectController extends Controller
             'slowEndpoints' => fn () => $categorySlug === 'requests'
                 ? $this->slowEndpointsQuery->execute($project)
                 : collect(),
-            // Only the Users tab reads this -- see the polling note above.
-            'onlineUsers' => fn () => $categorySlug === 'users'
-                ? $this->onlineUsersQuery->execute($project)
-                : [],
         ]);
     }
 

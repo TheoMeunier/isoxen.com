@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowUpRight,
@@ -28,105 +28,66 @@ import {
 import { index as projectsIndex, show } from '@/routes/projects';
 import type {
     CurrentProject,
+    ObservabilityCategories,
     ObservabilityCategory,
 } from '@/types/observability';
-type CategoryDef = {
-    slug: ObservabilityCategory;
-    label: string;
-    icon: LucideIcon;
-    type?: string;
-    enabled: boolean;
-    tone?: 'critical';
+
+// Icons are presentational and have no PHP-side equivalent, so they stay a
+// local lookup keyed by the same slug ObservabilityCategories::all() uses.
+// Everything else about a category (label, type, enabled, group) comes from
+// the `observabilityCategories` shared prop -- see HandleInertiaRequests and
+// ObservabilityCategories.php, the single source of truth for that data.
+const CATEGORY_ICONS: Record<ObservabilityCategory, LucideIcon> = {
+    requests: Globe,
+    jobs: BriefcaseBusiness,
+    commands: Braces,
+    'scheduled-tasks': CalendarClock,
+    exceptions: TriangleAlert,
+    queries: Database,
+    notifications: Bell,
+    mail: Mail,
+    cache: Zap,
+    'outgoing-requests': ArrowUpRight,
+    metrics: BarChart3,
+    users: Users,
+    logs: ScrollText,
 };
-const ACTIVITY: CategoryDef[] = [
-    {
-        slug: 'requests',
-        label: 'Requests',
-        icon: Globe,
-        type: 'request',
-        enabled: true,
-    },
-    {
-        slug: 'jobs',
-        label: 'Jobs',
-        icon: BriefcaseBusiness,
-        type: 'job',
-        enabled: true,
-    },
-    {
-        slug: 'commands',
-        label: 'Commands',
-        icon: Braces,
-        type: 'command',
-        enabled: true,
-    },
-    {
-        slug: 'scheduled-tasks',
-        label: 'Scheduled Tasks',
-        icon: CalendarClock,
-        type: 'scheduled_task',
-        enabled: true,
-    },
-    {
-        slug: 'exceptions',
-        label: 'Exceptions',
-        icon: TriangleAlert,
-        type: 'exception',
-        enabled: true,
-        tone: 'critical',
-    },
-    {
-        slug: 'queries',
-        label: 'Queries',
-        icon: Database,
-        type: 'query',
-        enabled: true,
-    },
-    {
-        slug: 'notifications',
-        label: 'Notifications',
-        icon: Bell,
-        type: 'notification',
-        enabled: true,
-    },
-    { slug: 'mail', label: 'Mail', icon: Mail, type: 'mail', enabled: true },
-    { slug: 'cache', label: 'Cache', icon: Zap, type: 'cache', enabled: true },
-    {
-        slug: 'outgoing-requests',
-        label: 'Outgoing Requests',
-        icon: ArrowUpRight,
-        type: 'outgoing_request',
-        enabled: true,
-    },
-    { slug: 'metrics', label: 'Metrics', icon: BarChart3, enabled: true },
-];
-const MONITORING: CategoryDef[] = [
-    { slug: 'users', label: 'Users', icon: Users, type: 'user', enabled: true },
-    { slug: 'logs', label: 'Logs', icon: ScrollText, enabled: true },
-];
+
+// Likewise presentational: which categories get the "critical" badge tint
+// when they have a nonzero count. Exceptions is the only one today.
+const CATEGORY_TONES: Partial<Record<ObservabilityCategory, 'critical'>> = {
+    exceptions: 'critical',
+};
+
 function CategoryItem({
-    category,
+    slug,
+    label,
+    type,
+    enabled,
     projectId,
     active,
     count,
 }: {
-    category: CategoryDef;
+    slug: ObservabilityCategory;
+    label: string;
+    type: string | null;
+    enabled: boolean;
     projectId: number;
     active: boolean;
     count?: number;
 }) {
-    const Icon = category.icon;
+    const Icon = CATEGORY_ICONS[slug];
 
-    if (!category.enabled) {
+    if (!enabled) {
         return (
             <SidebarMenuItem>
                 <SidebarMenuButton
                     disabled
-                    tooltip={{ children: `${category.label} — coming soon` }}
+                    tooltip={{ children: `${label} — coming soon` }}
                     className="cursor-not-allowed opacity-50"
                 >
                     <Icon />
-                    <span>{category.label}</span>
+                    <span>{label}</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
         );
@@ -137,23 +98,18 @@ function CategoryItem({
             <SidebarMenuButton
                 asChild
                 isActive={active}
-                tooltip={{ children: category.label }}
+                tooltip={{ children: label }}
             >
-                <Link
-                    href={show.url(projectId, {
-                        query: { category: category.slug },
-                    })}
-                    prefetch
-                >
+                <Link href={show({ project: projectId, category: slug })} prefetch>
                     <Icon />
-                    <span>{category.label}</span>
+                    <span>{label}</span>
                 </Link>
             </SidebarMenuButton>
 
-            {count !== undefined && count > 0 && (
+            {type && count !== undefined && count > 0 && (
                 <SidebarMenuBadge
                     className={
-                        category.tone === 'critical'
+                        CATEGORY_TONES[slug] === 'critical'
                             ? 'bg-[var(--color-tone-critical)]/10 font-semibold text-[var(--color-tone-critical)] peer-hover/menu-button:text-[var(--color-tone-critical)] peer-data-[active=true]/menu-button:text-[var(--color-tone-critical)]'
                             : undefined
                     }
@@ -164,31 +120,46 @@ function CategoryItem({
         </SidebarMenuItem>
     );
 }
+
 function CategoryGroup({
     label,
+    group,
     categories,
     project,
     active,
     counts,
 }: {
     label: string;
-    categories: CategoryDef[];
+    group: 'activity' | 'monitoring';
+    categories: ObservabilityCategories;
     project: CurrentProject;
     active: string;
     counts: Record<string, number>;
 }) {
+    const slugs = (
+        Object.entries(categories) as [
+            ObservabilityCategory,
+            ObservabilityCategories[ObservabilityCategory],
+        ][]
+    ).filter(([, category]) => category.group === group);
+
     return (
         <SidebarGroup className="px-2 py-0">
             <SidebarGroupLabel>{label}</SidebarGroupLabel>
             <SidebarMenu>
-                {categories.map((category) => (
+                {slugs.map(([slug, category]) => (
                     <CategoryItem
-                        key={category.slug}
-                        category={category}
+                        key={slug}
+                        slug={slug}
+                        label={category.label}
+                        type={category.type}
+                        enabled={category.enabled}
                         projectId={project.id}
-                        active={active === category.slug}
+                        active={active === slug}
                         count={
-                            category.type ? counts[category.type] : undefined
+                            category.type
+                                ? counts[category.type]
+                                : undefined
                         }
                     />
                 ))}
@@ -196,6 +167,7 @@ function CategoryGroup({
         </SidebarGroup>
     );
 }
+
 export function NavProject({
     project,
     active,
@@ -205,6 +177,14 @@ export function NavProject({
     active: string;
     counts: Record<string, number>;
 }) {
+    // Only present while viewing a project (see HandleInertiaRequests) --
+    // NavProject itself is only rendered in that situation (see
+    // AppSidebar), so this is always populated in practice.
+    const { props } = usePage<{
+        observabilityCategories?: ObservabilityCategories;
+    }>();
+    const categories = props.observabilityCategories ?? ({} as ObservabilityCategories);
+
     return (
         <>
             <SidebarGroup className="px-2 py-0">
@@ -233,8 +213,9 @@ export function NavProject({
                             tooltip={{ children: 'Information' }}
                         >
                             <Link
-                                href={show.url(project.id, {
-                                    query: { category: 'information' },
+                                href={show({
+                                    project: project.id,
+                                    category: 'information',
                                 })}
                                 prefetch
                             >
@@ -248,7 +229,8 @@ export function NavProject({
 
             <CategoryGroup
                 label="Activity"
-                categories={ACTIVITY}
+                group="activity"
+                categories={categories}
                 project={project}
                 active={active}
                 counts={counts}
@@ -256,7 +238,8 @@ export function NavProject({
 
             <CategoryGroup
                 label="Monitoring"
-                categories={MONITORING}
+                group="monitoring"
+                categories={categories}
                 project={project}
                 active={active}
                 counts={counts}

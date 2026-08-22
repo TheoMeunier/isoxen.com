@@ -24,10 +24,12 @@ namespace App\Watch\Ingestion\Support;
  * default in the client (ISOXEN_SENSOR_CACHE) because a cache-heavy request
  * emits hundreds of spans, and Users only fills on login/logout events.
  *
- * NOTE: the frontend (resources/js/pages/projects/show.tsx) currently
- * duplicates this list for icons/labels since there's no shared codegen
- * between this PHP array and TypeScript. Keep the two in sync by hand until
- * that's worth automating.
+ * This is also the list the {category} route segment is constrained against
+ * (see routes/projects.php) and, via HandleInertiaRequests, what the app
+ * sidebar (resources/js/components/organisms/sidebar/nav-project.tsx) reads
+ * to build its nav -- this array is the only source of truth for the
+ * slug/label/type/enabled data at runtime. The frontend still keeps its own
+ * local slug -> icon map, since an icon has no PHP-side equivalent.
  */
 final class ObservabilityCategories
 {

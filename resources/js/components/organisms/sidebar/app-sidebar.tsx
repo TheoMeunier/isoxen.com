@@ -16,8 +16,8 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as projectsIndex } from '@/routes/projects';
-import type { CurrentProject } from '@/types/observability';
 import type { NavItem } from '@/types';
+import type { CurrentProject } from '@/types/observability';
 
 const mainNavItems: NavItem[] = [
     {
@@ -55,9 +55,14 @@ export function AppSidebar() {
         categoryCounts?: Record<string, number>;
     }>();
 
-    const activeCategory =
-        new URL(url, 'http://localhost').searchParams.get('category') ??
-        DEFAULT_CATEGORY;
+    // The category is the last segment of `/projects/{project}/{category}`
+    // (see routes/projects.php) -- a bare `/projects/{project}` only ever
+    // hits the app while its redirect to the default category is in
+    // flight, so the fallback below is mostly cosmetic.
+    const segments = new URL(url, 'http://localhost').pathname
+        .split('/')
+        .filter(Boolean);
+    const activeCategory = segments[2] ?? DEFAULT_CATEGORY;
 
     return (
         <Sidebar collapsible="icon" variant="inset">

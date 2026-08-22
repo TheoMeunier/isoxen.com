@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Watch\Projects\Controllers;
 
 use App\Core\Controllers\Controller;
+use App\Watch\Ingestion\Support\ObservabilityCategories;
 use App\Watch\Projects\Actions\UpdateProjectAction;
 use App\Watch\Projects\Models\Project;
 use App\Watch\Projects\Requests\UpdateProjectRequest;
@@ -28,6 +29,9 @@ class EditProjectController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated.')]);
 
-        return to_route('projects.show', $project);
+        return to_route('projects.show', [
+            'project'  => $project,
+            'category' => ObservabilityCategories::default(),
+        ]);
     }
 }

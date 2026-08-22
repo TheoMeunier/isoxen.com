@@ -33,7 +33,7 @@ test('requests breaks down by HTTP status class', function () {
     makeStatusSpan($project->id, 'request', 2, httpStatus: 500);
 
     $this->actingAs($user)
-        ->get(route('projects.show', $project))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('statusBreakdown.0.label', '1XX-3XX')
             ->where('statusBreakdown.0.value', 2)
@@ -59,7 +59,7 @@ test('logs break down by severity', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'logs']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'logs']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('statusBreakdown.0.label', 'Info')
             ->where('statusBreakdown.0.value', 1)
@@ -82,7 +82,7 @@ test('a generic span category falls back to a success/failure split with its own
     makeStatusSpan($project->id, 'command', 2);
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'commands']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'commands']))
         ->assertInertia(fn (Assert $page) => $page
             ->where('statusBreakdown.0.label', 'Successful')
             ->where('statusBreakdown.0.value', 1)
@@ -98,7 +98,7 @@ test('metrics have no status breakdown or duration timeline', function () {
     $project = Project::factory()->for($user)->create();
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'metrics']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'metrics']))
         ->assertInertia(fn (Assert $page) => $page
             ->has('statusBreakdown', 0)
             ->has('durationTimeline', 0)

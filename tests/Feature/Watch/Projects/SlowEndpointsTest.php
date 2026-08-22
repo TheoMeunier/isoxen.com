@@ -34,7 +34,7 @@ test('the requests category includes a slow endpoints breakdown grouped by name'
     makeRequestSpan($project->id, 'GET /users', 10);
 
     $this->actingAs($user)
-        ->get(route('projects.show', $project))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertInertia(fn (Assert $page) => $page
             ->has('slowEndpoints', 2)
             // Sorted by p95 descending -- the slower endpoint comes first.
@@ -53,7 +53,7 @@ test('the slow endpoints breakdown is empty outside the requests category', func
     makeRequestSpan($project->id, 'GET /orders', 50);
 
     $this->actingAs($user)
-        ->get(route('projects.show', [$project, 'category' => 'queries']))
+        ->get(route('projects.show', ['project' => $project, 'category' => 'queries']))
         ->assertInertia(fn (Assert $page) => $page
             ->has('slowEndpoints', 0));
 });
