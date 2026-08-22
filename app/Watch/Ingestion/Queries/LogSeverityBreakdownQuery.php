@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
+use App\Watch\Ingestion\Models\OtelLog;
 use App\Watch\Ingestion\Queries\Concerns\BucketsByHour;
 use App\Watch\Projects\Models\Project;
-use Illuminate\Database\Query\Builder;
 use DateTimeInterface;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Query\Builder;
 
 class LogSeverityBreakdownQuery
 {
@@ -24,13 +24,13 @@ class LogSeverityBreakdownQuery
         return [
             'info'    => $this->base($project, $since)->where(fn ($q) => $q->whereNull('severity_number')->orWhere('severity_number', '<', 13))->count(),
             'warning' => $this->base($project, $since)->whereBetween('severity_number', [13, 16])->count(),
-            'error'   => $this->base($project, $since)->where('severity_number', '>=', 17)->count(),
+            'error'   => $this->base($project, $since)->where('severity_number', '>=', OtelLog::SEVERITY_ERROR)->count(),
         ];
     }
 
     private function base(Project $project, DateTimeInterface $since): Builder
     {
-        return DB::table('otel_logs')
+        return OtelLog::query()->toBase()
             ->where('project_id', $project->id)
             ->where('time', '>=', $since);
     }
@@ -46,7 +46,7 @@ class LogSeverityBreakdownQuery
         $bucket   = $this->bucketExpression();
         $severity = "case when severity_number >= 17 then 'error' when severity_number >= 13 then 'warning' else 'info' end";
 
-        $rows = DB::table('otel_logs')
+        $rows = OtelLog::query()->toBase()
             ->where('project_id', $project->id)
             ->where('time', '>=', $since)
             ->groupByRaw("{$bucket}, {$severity}")

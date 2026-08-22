@@ -39,7 +39,7 @@ final class OtlpMetricsParser
         DataPoint $point,
         DateTimeImmutable $now,
     ): ?MetricRow {
-        if (!$point->time instanceof \DateTimeImmutable) {
+        if (! $point->time instanceof DateTimeImmutable) {
             return null;
         }
 

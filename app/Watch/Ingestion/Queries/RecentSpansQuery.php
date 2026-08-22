@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
-use App\Watch\Ingestion\Queries\Concerns\ReturnsIsoTimestamps;
+use App\Watch\Ingestion\Models\OtelSpan;
 use App\Watch\Projects\Models\Project;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 
 class RecentSpansQuery
 {
-    use ReturnsIsoTimestamps;
-
     /**
      * Categories whose span `name` is too vague for the table and need a `detail` pulled out of `attributes`.
      *
@@ -24,8 +21,7 @@ class RecentSpansQuery
     {
         $needsAttributes = $type === null || in_array($type, self::DETAILED_TYPES, true);
 
-        return DB::table('otel_spans')
-            ->where('project_id', $project->id)
+        return $project->spans()
             ->when($type !== null, fn ($query) => $query->where('type', $type))
             ->orderByDesc('time')
             ->select([
@@ -35,25 +31,25 @@ class RecentSpansQuery
             ])
             ->paginate($perPage)
             ->withQueryString()
-            ->through(fn (object $row): object => $this->toIso($this->withDetail($row), ['time', 'end_time']));
+            ->through(fn (OtelSpan $span): OtelSpan => $this->withDetail($span));
     }
 
-    private function withDetail(object $row): object
+    private function withDetail(OtelSpan $span): OtelSpan
     {
-        if (! property_exists($row, 'attributes')) {
-            return $row;
+        // The model-side equivalent of the old property_exists() guard: a column that was never
+        // selected is absent from the attribute bag, and that category gets no `detail` key at all.
+        if (! array_key_exists('attributes', $span->getAttributes())) {
+            return $span;
         }
 
-        $attributes = $row->attributes === null
-            ? []
-            : json_decode((string) $row->attributes, true);
+        $attributes = $span->attributes ?? [];
 
-        $row->detail = match ($row->type) {
+        $span->detail = match ($span->type) {
             'query'            => $attributes['db.query.text'] ?? null,
             'outgoing_request' => trim(sprintf(
                 '%s %s',
                 $attributes['http.request.method'] ?? '',
-                $attributes['url.full']            ?? $row->name ?? ''
+                $attributes['url.full']            ?? $span->name ?? ''
             )) ?: null,
             'cache' => trim(sprintf(
                 '%s %s',
@@ -63,8 +59,8 @@ class RecentSpansQuery
             default => null,
         };
 
-        unset($row->attributes);
+        unset($span->attributes);
 
-        return $row;
+        return $span;
     }
 }

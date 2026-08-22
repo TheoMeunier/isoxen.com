@@ -15,7 +15,7 @@ class IngestMetricsController extends IngestOtlpController
         $payload = $this->decode($request, 'resourceMetrics');
 
         if (! $this->isEmpty($payload, 'resourceMetrics')) {
-            dispatch(new \App\Watch\Ingestion\Jobs\StoreOtlpMetrics($this->project($request)->id, $payload));
+            dispatch(new StoreOtlpMetrics($this->project($request)->id, $payload));
         }
 
         return response()->json([]);

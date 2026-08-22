@@ -31,7 +31,7 @@ final class OtlpSpansParser
 
     private static function toRow(int $projectId, ResourceSpans $resource, Span $span, DateTimeImmutable $now): ?SpanRow
     {
-        if (!$span->startTime instanceof \DateTimeImmutable) {
+        if (! $span->startTime instanceof DateTimeImmutable) {
             return null;
         }
 

@@ -35,7 +35,7 @@ final class OtlpLogsParser
         LogRecord $record,
         DateTimeImmutable $now,
     ): ?LogRow {
-        if (!$record->time instanceof \DateTimeImmutable) {
+        if (! $record->time instanceof DateTimeImmutable) {
             return null;
         }
 

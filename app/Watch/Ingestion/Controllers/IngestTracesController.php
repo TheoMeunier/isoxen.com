@@ -18,7 +18,7 @@ class IngestTracesController extends IngestOtlpController
         $payload = $this->decode($request, 'resourceSpans');
 
         if (! $this->isEmpty($payload, 'resourceSpans')) {
-            dispatch(new \App\Watch\Ingestion\Jobs\StoreOtlpSpans($this->project($request)->id, $payload));
+            dispatch(new StoreOtlpSpans($this->project($request)->id, $payload));
         }
 
         return response()->json([]);

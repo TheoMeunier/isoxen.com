@@ -4,43 +4,47 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
+use App\Watch\Ingestion\Models\OtelLog;
+use App\Watch\Ingestion\Models\OtelRecord;
+use App\Watch\Ingestion\Models\OtelSpan;
 use App\Watch\Projects\Models\Project;
-use Illuminate\Database\Query\Builder;
 use DateTimeInterface;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Query\Builder;
 
 class CategorySummaryQuery
 {
     /**
+     * @param  class-string<OtelRecord>  $model
      * @return array{total: int, errors: int|null, slowest_ms: float|null, avg_ms: float|null, hours: int}
      */
-    public function execute(Project $project, string $table, ?string $type = null, int $hours = 24): array
+    public function execute(Project $project, string $model, ?string $type = null, int $hours = 24): array
     {
         $since = \Illuminate\Support\Facades\Date::now()->subHours($hours);
 
-        $total = $this->base($project, $table, $type, $since)->count();
+        $total = $this->base($project, $model, $type, $since)->count();
 
         return [
             'total'      => $total,
-            'errors'     => $this->errors($project, $table, $type, $since),
-            'slowest_ms' => $table === 'otel_spans'
+            'errors'     => $this->errors($project, $model, $type, $since),
+            'slowest_ms' => $model === OtelSpan::class
                 ? $this->p95Milliseconds($project, $type, $since, $total)
                 : null,
-            'avg_ms' => $table === 'otel_spans'
+            'avg_ms' => $model === OtelSpan::class
                 ? $this->avgMilliseconds($project, $type, $since)
                 : null,
             'hours' => $hours,
         ];
     }
 
-    private function errors(Project $project, string $table, ?string $type, DateTimeInterface $since): ?int
+    /**
+     * @param  class-string<OtelRecord>  $model
+     */
+    private function errors(Project $project, string $model, ?string $type, DateTimeInterface $since): ?int
     {
-        return match ($table) {
-            // OTEL status code 2 is ERROR.
-            'otel_spans' => $this->base($project, $table, $type, $since)->where('status_code', 2)->count(),
-            // OTEL severity number 17 is where ERROR begins.
-            'otel_logs' => $this->base($project, $table, $type, $since)->where('severity_number', '>=', 17)->count(),
-            default     => null,
+        return match ($model) {
+            OtelSpan::class => $this->base($project, $model, $type, $since)->where('status_code', OtelSpan::STATUS_ERROR)->count(),
+            OtelLog::class  => $this->base($project, $model, $type, $since)->where('severity_number', '>=', OtelLog::SEVERITY_ERROR)->count(),
+            default         => null,
         };
     }
 
@@ -53,7 +57,7 @@ class CategorySummaryQuery
             return null;
         }
 
-        $nanos = $this->base($project, 'otel_spans', $type, $since)
+        $nanos = $this->base($project, OtelSpan::class, $type, $since)
             ->whereNotNull('duration_nanos')
             ->orderBy('duration_nanos')
             ->offset((int) floor($total * 0.95))
@@ -68,18 +72,21 @@ class CategorySummaryQuery
      */
     private function avgMilliseconds(Project $project, ?string $type, DateTimeInterface $since): ?float
     {
-        $avgNanos = $this->base($project, 'otel_spans', $type, $since)
+        $avgNanos = $this->base($project, OtelSpan::class, $type, $since)
             ->whereNotNull('duration_nanos')
             ->avg('duration_nanos');
 
         return $avgNanos === null ? null : round((float) $avgNanos / 1_000_000, 1);
     }
 
-    private function base(Project $project, string $table, ?string $type, DateTimeInterface $since): Builder
+    /**
+     * @param  class-string<OtelRecord>  $model
+     */
+    private function base(Project $project, string $model, ?string $type, DateTimeInterface $since): Builder
     {
-        return DB::table($table)
+        return $model::query()->toBase()
             ->where('project_id', $project->id)
             ->where('time', '>=', $since)
-            ->when($type !== null && $table === 'otel_spans', fn ($query) => $query->where('type', $type));
+            ->when($type !== null && $model === OtelSpan::class, fn ($query) => $query->where('type', $type));
     }
 }

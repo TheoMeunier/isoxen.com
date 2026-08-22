@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Watch\Projects\Controllers;
 
 use App\Core\Controllers\Controller;
+use App\Watch\Ingestion\Models\OtelRecord;
+use App\Watch\Ingestion\Models\OtelSpan;
 use App\Watch\Ingestion\Queries\ActivityTimelineQuery;
 use App\Watch\Ingestion\Queries\CategorySummaryQuery;
 use App\Watch\Ingestion\Queries\DurationTimelineQuery;
@@ -97,11 +99,11 @@ class ShowProjectController extends Controller
     private function renderActivity(Project $project, string $categorySlug): Response
     {
         $category = ObservabilityCategories::get($categorySlug);
-        $table    = ObservabilityCategories::table($categorySlug);
+        $model    = ObservabilityCategories::model($categorySlug);
 
         $summary        = null;
-        $resolveSummary = function () use (&$summary, $project, $table, $category): array {
-            return $summary ??= $this->categorySummaryQuery->execute($project, $table, $category['type']);
+        $resolveSummary = function () use (&$summary, $project, $model, $category): array {
+            return $summary ??= $this->categorySummaryQuery->execute($project, $model, $category['type']);
         };
 
         return Inertia::render('projects/show/activity', [
@@ -113,12 +115,12 @@ class ShowProjectController extends Controller
                 default   => $this->recentSpansQuery->execute($project, $category['type']),
             },
             'summary'          => $resolveSummary,
-            'timeline'         => fn (): array => $this->activityTimelineQuery->execute($project, $table, $category['type']),
-            'durationTimeline' => fn (): array => $table === 'otel_spans'
+            'timeline'         => fn (): array => $this->activityTimelineQuery->execute($project, $model, $category['type']),
+            'durationTimeline' => fn (): array => $model === OtelSpan::class
                 ? $this->durationTimelineQuery->execute($project, $category['type'])
                 : [],
-            'statusBreakdown' => fn (): array => $this->statusBreakdown($project, $categorySlug, $table, $resolveSummary()),
-            'statusTimeline'  => fn (): array => $this->statusTimeline($project, $categorySlug, $table, $category['type']),
+            'statusBreakdown' => fn (): array => $this->statusBreakdown($project, $categorySlug, $model, $resolveSummary()),
+            'statusTimeline'  => fn (): array => $this->statusTimeline($project, $categorySlug, $model, $category['type']),
             'slowEndpoints'   => fn (): \Illuminate\Support\Collection => $categorySlug === 'requests'
                 ? $this->slowEndpointsQuery->execute($project)
                 : collect(),
@@ -128,9 +130,10 @@ class ShowProjectController extends Controller
     /**
      * The pills next to a category's headline count: a bespoke breakdown for Requests and Logs, Ok/Error otherwise.
      *
+     * @param  class-string<OtelRecord>  $model
      * @return array<int, array{label: string, value: int, tone: string}>
      */
-    private function statusBreakdown(Project $project, string $categorySlug, string $table, array $summary): array
+    private function statusBreakdown(Project $project, string $categorySlug, string $model, array $summary): array
     {
         if ($categorySlug === 'requests') {
             $counts = $this->requestStatusBreakdownQuery->execute($project);
@@ -152,7 +155,7 @@ class ShowProjectController extends Controller
             ];
         }
 
-        if ($table !== 'otel_spans' || $summary['errors'] === null) {
+        if ($model !== OtelSpan::class || $summary['errors'] === null) {
             return [];
         }
 
@@ -167,9 +170,10 @@ class ShowProjectController extends Controller
     /**
      * The same breakdown as {@see self::statusBreakdown()}, per hour, with matching labels and tones.
      *
+     * @param  class-string<OtelRecord>  $model
      * @return array<int, array{at: string, segments: array<int, array{label: string, value: int, tone: string}>}>
      */
-    private function statusTimeline(Project $project, string $categorySlug, string $table, ?string $type): array
+    private function statusTimeline(Project $project, string $categorySlug, string $model, ?string $type): array
     {
         if ($categorySlug === 'requests') {
             return array_map(fn (array $hour): array => [
@@ -193,7 +197,7 @@ class ShowProjectController extends Controller
             ], $this->logSeverityBreakdownQuery->executeTimeline($project));
         }
 
-        if ($table !== 'otel_spans') {
+        if ($model !== OtelSpan::class) {
             return [];
         }
 

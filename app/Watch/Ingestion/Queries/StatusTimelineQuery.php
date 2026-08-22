@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
+use App\Watch\Ingestion\Models\OtelSpan;
 use App\Watch\Ingestion\Queries\Concerns\BucketsByHour;
 use App\Watch\Projects\Models\Project;
-use Illuminate\Support\Facades\DB;
 
 class StatusTimelineQuery
 {
@@ -20,7 +20,7 @@ class StatusTimelineQuery
         $since  = \Illuminate\Support\Facades\Date::now('UTC')->subHours($hours - 1)->startOfHour();
         $bucket = $this->bucketExpression();
 
-        $rows = DB::table('otel_spans')
+        $rows = OtelSpan::query()->toBase()
             ->where('project_id', $project->id)
             ->when($type !== null, fn ($query) => $query->where('type', $type))
             ->where('time', '>=', $since)

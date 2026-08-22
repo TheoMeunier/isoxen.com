@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
+use App\Watch\Ingestion\Models\OtelSpan;
 use App\Watch\Projects\Models\Project;
-use Illuminate\Support\Facades\DB;
 
 class SpanTypeCountsQuery
 {
@@ -16,7 +16,7 @@ class SpanTypeCountsQuery
      */
     public function execute(Project $project): array
     {
-        return DB::table('otel_spans')
+        return OtelSpan::query()->toBase()
             ->where('project_id', $project->id)
             ->whereNotNull('type')
             ->selectRaw('type, count(*) as aggregate')

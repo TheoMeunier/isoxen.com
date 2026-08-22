@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
+use App\Watch\Ingestion\Models\OtelSpan;
 use App\Watch\Projects\Models\Project;
-use Illuminate\Support\Facades\DB;
 
 class RequestStatusBreakdownQuery
 {
@@ -18,7 +18,7 @@ class RequestStatusBreakdownQuery
 
         $counts = ['success' => 0, 'client_error' => 0, 'server_error' => 0];
 
-        DB::table('otel_spans')
+        OtelSpan::query()->toBase()
             ->where('project_id', $project->id)
             ->where('type', 'request')
             ->where('time', '>=', $since)
@@ -66,7 +66,7 @@ class RequestStatusBreakdownQuery
             ];
         }
 
-        DB::table('otel_spans')
+        OtelSpan::query()->toBase()
             ->where('project_id', $project->id)
             ->where('type', 'request')
             ->where('time', '>=', $since)

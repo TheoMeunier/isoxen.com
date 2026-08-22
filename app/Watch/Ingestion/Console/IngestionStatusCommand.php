@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Console;
 
+use App\Watch\Ingestion\Models\OtelLog;
+use App\Watch\Ingestion\Models\OtelMetric;
+use App\Watch\Ingestion\Models\OtelRecord;
+use App\Watch\Ingestion\Models\OtelSpan;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -12,18 +16,21 @@ use Illuminate\Support\Facades\Schema;
 #[\Illuminate\Console\Attributes\Signature('isoxen:ingestion-status')]
 class IngestionStatusCommand extends Command
 {
-    private const array TABLES = [
-        'traces'  => 'otel_spans',
-        'metrics' => 'otel_metrics',
-        'logs'    => 'otel_logs',
+    /**
+     * @var array<string, class-string<OtelRecord>>
+     */
+    private const array MODELS = [
+        'traces'  => OtelSpan::class,
+        'metrics' => OtelMetric::class,
+        'logs'    => OtelLog::class,
     ];
 
     public function handle(): int
     {
         $this->components->info('Stored per signal');
 
-        foreach (self::TABLES as $signal => $table) {
-            $this->reportTable($signal, $table);
+        foreach (self::MODELS as $signal => $model) {
+            $this->reportModel($signal, $model);
         }
 
         $this->reportFailedJobs();
@@ -31,15 +38,20 @@ class IngestionStatusCommand extends Command
         return self::SUCCESS;
     }
 
-    private function reportTable(string $signal, string $table): void
+    /**
+     * @param  class-string<OtelRecord>  $model
+     */
+    private function reportModel(string $signal, string $model): void
     {
+        $table = (new $model)->getTable();
+
         if (! Schema::hasTable($table)) {
             $this->components->twoColumnDetail($signal, '<fg=red>table '.$table.' is missing — run migrations</>');
 
             return;
         }
 
-        $total = DB::table($table)->count();
+        $total = $model::query()->count();
 
         if ($total === 0) {
             $this->components->twoColumnDetail($signal, '<fg=yellow>empty</>');
@@ -47,7 +59,7 @@ class IngestionStatusCommand extends Command
             return;
         }
 
-        $latest = DB::table($table)->max('time');
+        $latest = $model::query()->max('time');
         $age    = $latest === null ? null : \Illuminate\Support\Facades\Date::parse($latest)->diffForHumans();
 
         $this->components->twoColumnDetail(

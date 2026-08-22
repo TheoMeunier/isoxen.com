@@ -4,22 +4,21 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
-use App\Watch\Ingestion\Queries\Concerns\ReturnsIsoTimestamps;
+use App\Watch\Ingestion\Models\OtelSpan;
 use App\Watch\Projects\Models\Project;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
+/**
+ * Every span of one trace, chronological and unpaginated, for the waterfall on the trace detail page.
+ */
 class TraceSpansQuery
 {
-    use ReturnsIsoTimestamps;
-
     /**
-     * @return Collection<int, object>
+     * @return Collection<int, OtelSpan>
      */
     public function execute(Project $project, string $traceId): Collection
     {
-        return DB::table('otel_spans')
-            ->where('project_id', $project->id)
+        return $project->spans()
             ->where('trace_id', $traceId)
             ->orderBy('time')
             ->select([
@@ -27,13 +26,6 @@ class TraceSpansQuery
                 'time', 'end_time', 'duration_nanos',
                 'status_code', 'status_message', 'attributes',
             ])
-            ->get()
-            ->map(function (object $row): object {
-                $row->attributes = $row->attributes === null
-                    ? null
-                    : json_decode((string) $row->attributes, true);
-
-                return $this->toIso($row, ['time', 'end_time']);
-            });
+            ->get();
     }
 }

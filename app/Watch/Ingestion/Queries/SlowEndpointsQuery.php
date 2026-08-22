@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries;
 
+use App\Watch\Ingestion\Models\OtelSpan;
 use App\Watch\Projects\Models\Project;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 class SlowEndpointsQuery
 {
@@ -18,7 +18,7 @@ class SlowEndpointsQuery
     {
         $since = \Illuminate\Support\Facades\Date::now()->subHours($hours);
 
-        $endpoints = DB::table('otel_spans')
+        $endpoints = OtelSpan::query()->toBase()
             ->where('project_id', $project->id)
             ->where('type', 'request')
             ->where('time', '>=', $since)
@@ -52,7 +52,7 @@ class SlowEndpointsQuery
     {
         $offset = min((int) floor($total * $fraction), $total - 1);
 
-        $nanos = DB::table('otel_spans')
+        $nanos = OtelSpan::query()->toBase()
             ->where('project_id', $project->id)
             ->where('type', 'request')
             ->where('name', $name)

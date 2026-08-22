@@ -15,7 +15,7 @@ class IngestLogsController extends IngestOtlpController
         $payload = $this->decode($request, 'resourceLogs');
 
         if (! $this->isEmpty($payload, 'resourceLogs')) {
-            dispatch(new \App\Watch\Ingestion\Jobs\StoreOtlpLogs($this->project($request)->id, $payload));
+            dispatch(new StoreOtlpLogs($this->project($request)->id, $payload));
         }
 
         return response()->json([]);

@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Support;
 
+use App\Watch\Ingestion\Models\OtelLog;
+use App\Watch\Ingestion\Models\OtelMetric;
+use App\Watch\Ingestion\Models\OtelRecord;
+use App\Watch\Ingestion\Models\OtelSpan;
+
 final class ObservabilityCategories
 {
     /**
@@ -46,12 +51,17 @@ final class ObservabilityCategories
         return 'requests';
     }
 
-    public static function table(string $slug): string
+    /**
+     * The model a category's entries are read from.
+     *
+     * @return class-string<OtelRecord>
+     */
+    public static function model(string $slug): string
     {
         return match (self::get($slug)['source']) {
-            'metrics' => 'otel_metrics',
-            'logs'    => 'otel_logs',
-            default   => 'otel_spans',
+            'metrics' => OtelMetric::class,
+            'logs'    => OtelLog::class,
+            default   => OtelSpan::class,
         };
     }
 }
