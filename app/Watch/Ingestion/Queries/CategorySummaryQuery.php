@@ -6,7 +6,7 @@ namespace App\Watch\Ingestion\Queries;
 
 use App\Watch\Projects\Models\Project;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Carbon;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 
 class CategorySummaryQuery
@@ -33,7 +33,7 @@ class CategorySummaryQuery
         ];
     }
 
-    private function errors(Project $project, string $table, ?string $type, Carbon $since): ?int
+    private function errors(Project $project, string $table, ?string $type, DateTimeInterface $since): ?int
     {
         return match ($table) {
             // OTEL status code 2 is ERROR.
@@ -47,7 +47,7 @@ class CategorySummaryQuery
     /**
      * The 95th percentile duration in milliseconds, read by order-and-offset since SQLite has no `percentile_cont`.
      */
-    private function p95Milliseconds(Project $project, ?string $type, Carbon $since, int $total): ?float
+    private function p95Milliseconds(Project $project, ?string $type, DateTimeInterface $since, int $total): ?float
     {
         if ($total === 0) {
             return null;
@@ -66,7 +66,7 @@ class CategorySummaryQuery
     /**
      * The average duration in milliseconds, the Duration panel's headline figure alongside the p95.
      */
-    private function avgMilliseconds(Project $project, ?string $type, Carbon $since): ?float
+    private function avgMilliseconds(Project $project, ?string $type, DateTimeInterface $since): ?float
     {
         $avgNanos = $this->base($project, 'otel_spans', $type, $since)
             ->whereNotNull('duration_nanos')
@@ -75,7 +75,7 @@ class CategorySummaryQuery
         return $avgNanos === null ? null : round((float) $avgNanos / 1_000_000, 1);
     }
 
-    private function base(Project $project, string $table, ?string $type, Carbon $since): Builder
+    private function base(Project $project, string $table, ?string $type, DateTimeInterface $since): Builder
     {
         return DB::table($table)
             ->where('project_id', $project->id)

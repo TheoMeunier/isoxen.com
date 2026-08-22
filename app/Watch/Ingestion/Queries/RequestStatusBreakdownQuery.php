@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Watch\Ingestion\Queries;
 
 use App\Watch\Projects\Models\Project;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class RequestStatusBreakdownQuery

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Watch\Ingestion\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 

@@ -6,7 +6,6 @@ namespace App\Watch\Ingestion\Queries;
 
 use App\Watch\Ingestion\Queries\Concerns\BucketsByHour;
 use App\Watch\Projects\Models\Project;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class StatusTimelineQuery

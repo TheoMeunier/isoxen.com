@@ -1,0 +1,108 @@
+diff --git a/app/Watch/Ingestion/Parsing/OtlpLogsParser.php b/app/Watch/Ingestion/Parsing/OtlpLogsParser.php
+index d001f5e..fa7dfce 100644
+--- a/app/Watch/Ingestion/Parsing/OtlpLogsParser.php
++++ b/app/Watch/Ingestion/Parsing/OtlpLogsParser.php
+@@ -9,7 +9,7 @@
+ use App\Watch\Ingestion\Data\Otlp\LogsPayload;
+ use App\Watch\Ingestion\Data\Otlp\ResourceLogs;
+ use DateTimeImmutable;
+-use Illuminate\Support\Carbon;
++use Illuminate\Support\Facades\Date;
+ use Illuminate\Support\Collection;
+ 
+ final class OtlpLogsParser
+@@ -20,7 +20,7 @@ final class OtlpLogsParser
+      */
+     public static function toRows(int $projectId, array $payload): Collection
+     {
+-        $now = DateTimeImmutable::createFromInterface(Carbon::now());
++        $now = DateTimeImmutable::createFromInterface(Date::now());
+ 
+         return LogsPayload::fromArray($payload)
+             ->resourceLogs
+diff --git a/app/Watch/Ingestion/Parsing/OtlpMetricsParser.php b/app/Watch/Ingestion/Parsing/OtlpMetricsParser.php
+index 2e617fe..709d88a 100644
+--- a/app/Watch/Ingestion/Parsing/OtlpMetricsParser.php
++++ b/app/Watch/Ingestion/Parsing/OtlpMetricsParser.php
+@@ -10,7 +10,7 @@
+ use App\Watch\Ingestion\Data\Otlp\MetricsPayload;
+ use App\Watch\Ingestion\Data\Otlp\ResourceMetrics;
+ use DateTimeImmutable;
+-use Illuminate\Support\Carbon;
++use Illuminate\Support\Facades\Date;
+ use Illuminate\Support\Collection;
+ 
+ final class OtlpMetricsParser
+@@ -21,7 +21,7 @@ final class OtlpMetricsParser
+      */
+     public static function toRows(int $projectId, array $payload): Collection
+     {
+-        $now = DateTimeImmutable::createFromInterface(Carbon::now());
++        $now = DateTimeImmutable::createFromInterface(Date::now());
+ 
+         return MetricsPayload::fromArray($payload)
+             ->resourceMetrics
+diff --git a/app/Watch/Ingestion/Parsing/OtlpSpansParser.php b/app/Watch/Ingestion/Parsing/OtlpSpansParser.php
+index e08273d..798c524 100644
+--- a/app/Watch/Ingestion/Parsing/OtlpSpansParser.php
++++ b/app/Watch/Ingestion/Parsing/OtlpSpansParser.php
+@@ -9,7 +9,7 @@
+ use App\Watch\Ingestion\Data\Otlp\TracePayload;
+ use App\Watch\Ingestion\Data\SpanRow;
+ use DateTimeImmutable;
+-use Illuminate\Support\Carbon;
++use Illuminate\Support\Facades\Date;
+ use Illuminate\Support\Collection;
+ 
+ final class OtlpSpansParser
+@@ -20,7 +20,7 @@ final class OtlpSpansParser
+      */
+     public static function toRows(int $projectId, array $payload): Collection
+     {
+-        $now = DateTimeImmutable::createFromInterface(Carbon::now());
++        $now = DateTimeImmutable::createFromInterface(Date::now());
+ 
+         return TracePayload::fromArray($payload)
+             ->resourceSpans
+diff --git a/app/Watch/Ingestion/Support/OtlpTimestamp.php b/app/Watch/Ingestion/Support/OtlpTimestamp.php
+index 0b19226..20f466b 100644
+--- a/app/Watch/Ingestion/Support/OtlpTimestamp.php
++++ b/app/Watch/Ingestion/Support/OtlpTimestamp.php
+@@ -5,32 +5,26 @@
+ namespace App\Watch\Ingestion\Support;
+ 
+ use DateTimeImmutable;
+-use Illuminate\Support\Carbon;
+ 
+ final class OtlpTimestamp
+ {
++    /** Nanoseconds since the epoch, truncated to the microseconds Postgres stores (ADR-0001). */
+     public static function toDateTime(string|int|null $unixNano): ?DateTimeImmutable
+-    {
+-        $carbon = self::toCarbon($unixNano);
+-
+-        return $carbon === null ? null : DateTimeImmutable::createFromInterface($carbon);
+-    }
+-
+-    private static function toCarbon(string|int|null $unixNano): ?Carbon
+     {
+         if ($unixNano === null) {
+             return null;
+         }
+ 
+-        $nanos = (int)$unixNano;
++        $nanos = (int) $unixNano;
+ 
+         if ($nanos <= 0) {
+             return null;
+         }
+ 
+         $seconds = intdiv($nanos, 1_000_000_000);
+-        $microseconds = intdiv($nanos % 1_000_000_000, 1_000);
++        $microseconds = str_pad((string) intdiv($nanos % 1_000_000_000, 1_000), 6, '0', STR_PAD_LEFT);
+ 
+-        return Carbon::createFromTimestamp($seconds)->addMicroseconds($microseconds);
++        // The 'U' format anchors the result to UTC, as Carbon::createFromTimestamp() did here before.
++        return DateTimeImmutable::createFromFormat('U u', $seconds.' '.$microseconds) ?: null;
+     }
+ }

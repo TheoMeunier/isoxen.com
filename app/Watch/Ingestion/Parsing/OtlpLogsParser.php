@@ -9,7 +9,6 @@ use App\Watch\Ingestion\Data\Otlp\LogRecord;
 use App\Watch\Ingestion\Data\Otlp\LogsPayload;
 use App\Watch\Ingestion\Data\Otlp\ResourceLogs;
 use DateTimeImmutable;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 final class OtlpLogsParser

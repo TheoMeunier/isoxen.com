@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Queries\Concerns;
 
-use Illuminate\Support\Carbon;
 
 trait ReturnsIsoTimestamps
 {

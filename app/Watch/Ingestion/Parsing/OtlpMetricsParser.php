@@ -10,7 +10,6 @@ use App\Watch\Ingestion\Data\Otlp\Metric;
 use App\Watch\Ingestion\Data\Otlp\MetricsPayload;
 use App\Watch\Ingestion\Data\Otlp\ResourceMetrics;
 use DateTimeImmutable;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 final class OtlpMetricsParser

@@ -9,7 +9,6 @@ use App\Watch\Ingestion\Data\Otlp\Span;
 use App\Watch\Ingestion\Data\Otlp\TracePayload;
 use App\Watch\Ingestion\Data\SpanRow;
 use DateTimeImmutable;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 final class OtlpSpansParser

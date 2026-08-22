@@ -7,7 +7,7 @@ namespace App\Watch\Ingestion\Queries;
 use App\Watch\Ingestion\Queries\Concerns\BucketsByHour;
 use App\Watch\Projects\Models\Project;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Carbon;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 
 class LogSeverityBreakdownQuery
@@ -28,7 +28,7 @@ class LogSeverityBreakdownQuery
         ];
     }
 
-    private function base(Project $project, Carbon $since): Builder
+    private function base(Project $project, DateTimeInterface $since): Builder
     {
         return DB::table('otel_logs')
             ->where('project_id', $project->id)

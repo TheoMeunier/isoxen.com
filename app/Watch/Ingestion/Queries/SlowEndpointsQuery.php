@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Watch\Ingestion\Queries;
 
 use App\Watch\Projects\Models\Project;
-use Illuminate\Support\Carbon;
+use DateTimeInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -48,7 +48,7 @@ class SlowEndpointsQuery
             ->values();
     }
 
-    private function percentileMs(Project $project, string $name, Carbon $since, int $total, float $fraction): float
+    private function percentileMs(Project $project, string $name, DateTimeInterface $since, int $total, float $fraction): float
     {
         $offset = min((int) floor($total * $fraction), $total - 1);
 
