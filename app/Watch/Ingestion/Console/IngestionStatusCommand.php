@@ -9,14 +9,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Reports what isoxen has actually received and stored.
- *
- * The counterpart to the client's `isoxen:doctor`, which reports what an
- * application tried to send. Run both and the gap between them says which
- * half of the pipeline is at fault — a question that otherwise takes a lot
- * of guessing.
- */
 class IngestionStatusCommand extends Command
 {
     protected $signature = 'isoxen:ingestion-status';
@@ -44,8 +36,8 @@ class IngestionStatusCommand extends Command
 
     private function reportTable(string $signal, string $table): void
     {
-        if (! Schema::hasTable($table)) {
-            $this->components->twoColumnDetail($signal, '<fg=red>table '.$table.' is missing — run migrations</>');
+        if (!Schema::hasTable($table)) {
+            $this->components->twoColumnDetail($signal, '<fg=red>table ' . $table . ' is missing — run migrations</>');
 
             return;
         }
@@ -63,13 +55,13 @@ class IngestionStatusCommand extends Command
 
         $this->components->twoColumnDetail(
             $signal,
-            "<fg=green>{$total}</> rows, most recent ".($age ?? 'unknown'),
+            "<fg=green>{$total}</> rows, most recent " . ($age ?? 'unknown'),
         );
     }
 
     private function reportFailedJobs(): void
     {
-        if (! Schema::hasTable('failed_jobs')) {
+        if (!Schema::hasTable('failed_jobs')) {
             return;
         }
 
@@ -80,9 +72,6 @@ class IngestionStatusCommand extends Command
         $this->components->twoColumnDetail(
             'failed_jobs',
             $failed > 0
-                // A failed store job is the difference between "nothing was
-                // sent" and "it arrived and could not be written" — worth
-                // knowing before looking anywhere else.
                 ? "<fg=red>{$failed}</> — inspect with `php artisan queue:failed`"
                 : '<fg=green>0</>',
         );

@@ -9,14 +9,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Resolves the {@see Project} an incoming OTLP request belongs to, based on
- * the project's ingestion token sent as a bearer token, and rejects the
- * request otherwise.
- *
- * The resolved project is made available to controllers via
- * `$request->attributes->get('otelProject')`.
- */
+/** Resolves the {@see Project} from the bearer ingestion token into the `otelProject` request attribute. */
 class AuthenticateIngestionToken
 {
     public function handle(Request $request, Closure $next): Response

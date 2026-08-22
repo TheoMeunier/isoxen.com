@@ -16,10 +16,7 @@ class IngestTracesController extends IngestOtlpController
     public function store(Request $request): JsonResponse
     {
         $payload = $this->decode($request, 'resourceSpans');
-        dump($payload);
 
-        // An empty export is acknowledged without queueing a job that would
-        // parse nothing and insert nothing.
         if (!$this->isEmpty($payload, 'resourceSpans')) {
             StoreOtlpSpans::dispatch($this->project($request)->id, $payload);
         }

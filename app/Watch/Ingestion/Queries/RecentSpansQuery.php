@@ -14,18 +14,7 @@ class RecentSpansQuery
     use ReturnsIsoTimestamps;
 
     /**
-     * Categories whose span `name` alone isn't informative enough for the
-     * table. Queries only ever get "SELECT"/"INSERT"/... (the real SQL is
-     * in attributes.db.query.text -- see QueryInstrumentation), Outgoing
-     * Requests only get a bare verb unless the host app has wired up a
-     * route-name resolver (attributes.url.full always has the real target
-     * -- see GuzzleTraceMiddleware), and Cache only gets "cache
-     * hit"/"cache write"/... with no indication of *which* key (that's
-     * attributes.cache.key -- see CacheInstrumentation). All three need a
-     * field pulled out of `attributes` into a `detail` column; nothing
-     * else in that blob (it also carries request/response headers) is fit
-     * to ship to the frontend, so it's decoded here and discarded once
-     * `detail` is set.
+     * Categories whose span `name` is too vague for the table and need a `detail` pulled out of `attributes`.
      *
      * @var list<string>
      */

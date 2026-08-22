@@ -14,12 +14,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class ProjectResource extends JsonResource
 {
     /**
-     * Transform the project into an array for the frontend.
-     *
-     * The ingestion token is a secret used to authenticate incoming data, so
-     * it's only resolved to its real value on the project's own page. On
-     * every other page the key is still present, but null, so the frontend
-     * can rely on a single, consistent `Project` shape.
+     * Transform the project for the frontend; the secret token resolves only on the project's own page.
      *
      * @return array<string, mixed>
      */

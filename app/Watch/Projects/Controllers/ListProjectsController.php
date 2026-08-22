@@ -12,9 +12,6 @@ use Inertia\Response;
 
 class ListProjectsController extends Controller
 {
-    /**
-     * Render the authenticated user's list of projects.
-     */
     public function render(Request $request): Response
     {
         return Inertia::render('projects/index', [

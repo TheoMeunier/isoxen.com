@@ -16,11 +16,10 @@ class EditProjectController extends Controller
 {
     public function __construct(
         private readonly UpdateProjectAction $updateProjectAction,
-    ) {}
+    )
+    {
+    }
 
-    /**
-     * Update the given project.
-     */
     public function execute(UpdateProjectRequest $request, Project $project): RedirectResponse
     {
         $this->authorize('update', $project);
@@ -30,7 +29,7 @@ class EditProjectController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated.')]);
 
         return to_route('projects.show', [
-            'project'  => $project,
+            'project' => $project,
             'category' => ObservabilityCategories::default(),
         ]);
     }

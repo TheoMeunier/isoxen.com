@@ -14,11 +14,10 @@ class DeleteProjectController extends Controller
 {
     public function __construct(
         private readonly DeleteProjectAction $deleteProjectAction,
-    ) {}
+    )
+    {
+    }
 
-    /**
-     * Delete the given project.
-     */
     public function execute(Project $project): RedirectResponse
     {
         $this->authorize('delete', $project);

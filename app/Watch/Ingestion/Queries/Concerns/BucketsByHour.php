@@ -6,15 +6,7 @@ namespace App\Watch\Ingestion\Queries\Concerns;
 
 use Illuminate\Support\Facades\DB;
 
-/**
- * The SQL fragment that truncates a `time` column down to its containing
- * hour, as a string key both sides of a query can agree on.
- *
- * Shared by every query that charts something per hour (activity volume,
- * average duration, ...) so the Postgres/SQLite branching -- and the need
- * for `AT TIME ZONE 'UTC'` on Postgres specifically -- only has to be
- * gotten right once. See ActivityTimelineQuery for why the timezone matters.
- */
+/** The SQL fragment truncating a `time` column to its containing UTC hour, as a key both sides of a query share. */
 trait BucketsByHour
 {
     protected function bucketExpression(): string

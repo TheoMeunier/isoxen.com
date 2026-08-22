@@ -29,16 +29,10 @@ class WatchServiceProvider extends ServiceProvider
     {
         Gate::policy(Project::class, ProjectPolicy::class);
 
-        // isoxen.com monitors itself (see the "jobs" sensor's comment in
-        // packages/isoxen-client/config/isoxen.php), so this is both the
-        // client library's usage example and what makes our own Users tab
-        // show a name/email instead of just an id. Off wherever
-        // `isoxen.user_context` is disabled -- same gate as every other
-        // span/log carrying user context.
-        OpenTelemetry::user(fn (User $user): array => [
-            'user.id'    => $user->id,
+        OpenTelemetry::user(fn(User $user): array => [
+            'user.id' => $user->id,
             'user.email' => $user->email,
-            'user.name'  => $user->name,
+            'user.name' => $user->name,
         ]);
 
         if ($this->app->runningInConsole()) {

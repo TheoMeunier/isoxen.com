@@ -29,10 +29,6 @@ class Project extends Model
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
 
-    /**
-     * Laravel's default factory guessing assumes App\Models\*, so it can't
-     * find ProjectFactory from this feature namespace on its own.
-     */
     protected static function newFactory(): ProjectFactory
     {
         return ProjectFactory::new();
@@ -48,15 +44,11 @@ class Project extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Generate the project's slug and ingestion token before it's created,
-     * unless they were already provided (e.g. by a factory state).
-     */
     protected static function booted(): void
     {
         static::creating(function (Project $project): void {
-            $project->slug  ??= Str::slug($project->name).'-'.Str::lower(Str::random(6));
-            $project->token ??= 'proj_'.Str::random(40);
+            $project->slug ??= Str::slug($project->name) . '-' . Str::lower(Str::random(6));
+            $project->token ??= 'proj_' . Str::random(40);
         });
     }
 }

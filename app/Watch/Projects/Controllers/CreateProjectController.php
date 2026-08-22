@@ -16,11 +16,10 @@ class CreateProjectController extends Controller
 {
     public function __construct(
         private readonly CreateProjectAction $createProjectAction,
-    ) {}
+    )
+    {
+    }
 
-    /**
-     * Create a new project for the authenticated user.
-     */
     public function execute(CreateProjectRequest $request): RedirectResponse
     {
         $this->authorize('create', Project::class);
@@ -30,7 +29,7 @@ class CreateProjectController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project created.')]);
 
         return to_route('projects.show', [
-            'project'  => $project,
+            'project' => $project,
             'category' => ObservabilityCategories::default(),
         ]);
     }

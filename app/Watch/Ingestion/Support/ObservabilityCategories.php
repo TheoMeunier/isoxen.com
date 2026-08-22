@@ -4,33 +4,6 @@ declare(strict_types=1);
 
 namespace App\Watch\Ingestion\Support;
 
-/**
- * Single source of truth for the project sidebar's categories (mirrors
- * Laravel Nightwatch's "Activity"/"Monitoring" layout).
- *
- * Each entry maps a URL-facing `slug` to where its data actually comes
- * from:
- * - `source: 'span'` reads from `otel_spans` filtered by the given `type`
- *   (populated from the `isoxen.type` attribute -- see OtlpSpansParser).
- * - `source: 'logs'` / `'metrics'` read from their respective tables as-is.
- *
- * `enabled: false` marks a category the UI shows (to match the reference
- * layout) but that isn't wired to real data yet. Every category is enabled
- * as of the client gaining instrumentation for commands, the scheduler,
- * mail, notifications, cache and users; the flag remains for categories
- * added here before their sensor exists, which render disabled.
- *
- * An enabled category can still be legitimately empty: Cache is off by
- * default in the client (ISOXEN_SENSOR_CACHE) because a cache-heavy request
- * emits hundreds of spans, and Users only fills on login/logout events.
- *
- * This is also the list the {category} route segment is constrained against
- * (see routes/projects.php) and, via HandleInertiaRequests, what the app
- * sidebar (resources/js/components/organisms/sidebar/nav-project.tsx) reads
- * to build its nav -- this array is the only source of truth for the
- * slug/label/type/enabled data at runtime. The frontend still keeps its own
- * local slug -> icon map, since an icon has no PHP-side equivalent.
- */
 final class ObservabilityCategories
 {
     /**
@@ -73,9 +46,6 @@ final class ObservabilityCategories
         return 'requests';
     }
 
-    /**
-     * The table a category's entries are read from.
-     */
     public static function table(string $slug): string
     {
         return match (self::get($slug)['source']) {

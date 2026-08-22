@@ -36,10 +36,6 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
-    /**
-     * Laravel's default factory guessing assumes App\Models\*, so it can't
-     * find UserFactory from this feature namespace on its own.
-     */
     protected static function newFactory(): UserFactory
     {
         return UserFactory::new();
@@ -63,8 +59,8 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at'       => 'datetime',
-            'password'                => 'hashed',
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
         ];
     }

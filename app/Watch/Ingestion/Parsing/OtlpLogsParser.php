@@ -9,20 +9,16 @@ use App\Watch\Ingestion\Support\OtlpTimestamp;
 use App\Watch\Ingestion\Support\OtlpValue;
 use Illuminate\Support\Carbon;
 
-/**
- * Flattens an OTLP/JSON `ExportLogsServiceRequest` payload into rows ready
- * to be inserted into the `otel_logs` table.
- */
 final class OtlpLogsParser
 {
     /**
-     * @param  array<string, mixed>  $payload
+     * @param array<string, mixed> $payload
      * @return array<int, array<string, mixed>>
      */
     public static function toRows(int $projectId, array $payload): array
     {
         $rows = [];
-        $now  = Carbon::now();
+        $now = Carbon::now();
 
         foreach ($payload['resourceLogs'] ?? [] as $resourceLog) {
             $resourceAttributes = OtlpAttributes::toArray($resourceLog['resource']['attributes'] ?? []);
@@ -38,21 +34,19 @@ final class OtlpLogsParser
                     }
 
                     $rows[] = [
-                        'project_id'      => $projectId,
-                        'trace_id'        => OtlpValue::id($logRecord['traceId'] ?? null, 16),
-                        'span_id'         => OtlpValue::id($logRecord['spanId'] ?? null, 8),
+                        'project_id' => $projectId,
+                        'trace_id' => OtlpValue::id($logRecord['traceId'] ?? null, 16),
+                        'span_id' => OtlpValue::id($logRecord['spanId'] ?? null, 8),
                         'severity_number' => OtlpValue::severityNumber($logRecord['severityNumber'] ?? null),
-                        'severity_text'   => $logRecord['severityText'] ?? null,
-                        'body'            => self::body($logRecord['body'] ?? null),
-                        // Formatted explicitly rather than passing $time
-                        // directly -- see OtlpTimestamp::toDatabaseString().
+                        'severity_text' => $logRecord['severityText'] ?? null,
+                        'body' => self::body($logRecord['body'] ?? null),
                         'time' => OtlpTimestamp::toDatabaseString(
                             $logRecord['timeUnixNano'] ?? $logRecord['observedTimeUnixNano'] ?? null,
                         ),
                         'resource_attributes' => json_encode($resourceAttributes),
-                        'attributes'          => json_encode(OtlpAttributes::toArray($logRecord['attributes'] ?? [])),
-                        'raw'                 => json_encode($logRecord),
-                        'created_at'          => $now,
+                        'attributes' => json_encode(OtlpAttributes::toArray($logRecord['attributes'] ?? [])),
+                        'raw' => json_encode($logRecord),
+                        'created_at' => $now,
                     ];
                 }
             }
@@ -63,13 +57,13 @@ final class OtlpLogsParser
 
     private static function body(mixed $body): ?string
     {
-        if (! is_array($body)) {
+        if (!is_array($body)) {
             return null;
         }
 
         return match (true) {
-            array_key_exists('stringValue', $body) => (string) $body['stringValue'],
-            default                                => json_encode($body),
+            array_key_exists('stringValue', $body) => (string)$body['stringValue'],
+            default => json_encode($body),
         };
     }
 }

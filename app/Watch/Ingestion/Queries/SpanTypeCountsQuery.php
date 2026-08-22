@@ -12,8 +12,7 @@ class SpanTypeCountsQuery
     /**
      * Count spans per `type`, for the sidebar's badge counts.
      *
-     * @return array<string, int> keyed by `type` (spans with a null type
-     *                             are omitted; they have no sidebar entry)
+     * @return array<string, int> keyed by `type`; null-typed spans are omitted
      */
     public function execute(Project $project): array
     {

@@ -9,20 +9,16 @@ use App\Watch\Ingestion\Support\OtlpTimestamp;
 use App\Watch\Ingestion\Support\OtlpValue;
 use Illuminate\Support\Carbon;
 
-/**
- * Flattens an OTLP/JSON `ExportTraceServiceRequest` payload into rows ready
- * to be inserted into the `otel_spans` table.
- */
 final class OtlpSpansParser
 {
     /**
-     * @param  array<string, mixed>  $payload
+     * @param array<string, mixed> $payload
      * @return array<int, array<string, mixed>>
      */
     public static function toRows(int $projectId, array $payload): array
     {
         $rows = [];
-        $now  = Carbon::now();
+        $now = Carbon::now();
 
         foreach ($payload['resourceSpans'] ?? [] as $resourceSpan) {
             $resourceAttributes = OtlpAttributes::toArray($resourceSpan['resource']['attributes'] ?? []);
@@ -32,43 +28,28 @@ final class OtlpSpansParser
                     $startTime = OtlpTimestamp::toCarbon($span['startTimeUnixNano'] ?? null);
 
                     if ($startTime === null) {
-                        // A span without a start time can't be placed on the
-                        // hypertable's time axis, so it's dropped rather than
-                        // stored with a made-up timestamp.
                         continue;
                     }
 
                     $attributes = OtlpAttributes::toArray($span['attributes'] ?? []);
 
                     $rows[] = [
-                        'project_id'     => $projectId,
-                        'trace_id'       => OtlpValue::id($span['traceId'] ?? null, 16),
-                        'span_id'        => OtlpValue::id($span['spanId'] ?? null, 8),
+                        'project_id' => $projectId,
+                        'trace_id' => OtlpValue::id($span['traceId'] ?? null, 16),
+                        'span_id' => OtlpValue::id($span['spanId'] ?? null, 8),
                         'parent_span_id' => OtlpValue::id($span['parentSpanId'] ?? null, 8),
-                        'name'           => $span['name'] ?? null,
-                        // Not a standard OTLP field: populated from the
-                        // `isoxen.type` attribute set by isoxen's own
-                        // instrumentation client, used to drive the
-                        // project's sidebar (Requests/Jobs/Queries/...).
-                        // Spans from a generic OTEL SDK won't set this and
-                        // are stored as uncategorized (null).
+                        'name' => $span['name'] ?? null,
                         'type' => $attributes['isoxen.type'] ?? null,
                         'kind' => OtlpValue::spanKind($span['kind'] ?? null),
-                        // Formatted explicitly (rather than passing the
-                        // Carbon instances above) because a raw Carbon bound
-                        // to a `DB::table()->insert()` row is stringified via
-                        // the connection's default date format, which drops
-                        // sub-second precision -- see
-                        // OtlpTimestamp::toDatabaseString().
-                        'time'                => OtlpTimestamp::toDatabaseString($span['startTimeUnixNano'] ?? null),
-                        'end_time'            => OtlpTimestamp::toDatabaseString($span['endTimeUnixNano'] ?? null),
-                        'duration_nanos'      => self::durationNanos($span),
-                        'status_code'         => OtlpValue::statusCode($span['status']['code'] ?? null),
-                        'status_message'      => $span['status']['message'] ?? null,
+                        'time' => OtlpTimestamp::toDatabaseString($span['startTimeUnixNano'] ?? null),
+                        'end_time' => OtlpTimestamp::toDatabaseString($span['endTimeUnixNano'] ?? null),
+                        'duration_nanos' => self::durationNanos($span),
+                        'status_code' => OtlpValue::statusCode($span['status']['code'] ?? null),
+                        'status_message' => $span['status']['message'] ?? null,
                         'resource_attributes' => json_encode($resourceAttributes),
-                        'attributes'          => json_encode($attributes),
-                        'raw'                 => json_encode($span),
-                        'created_at'          => $now,
+                        'attributes' => json_encode($attributes),
+                        'raw' => json_encode($span),
+                        'created_at' => $now,
                     ];
                 }
             }
@@ -78,14 +59,14 @@ final class OtlpSpansParser
     }
 
     /**
-     * @param  array<string, mixed>  $span
+     * @param array<string, mixed> $span
      */
     private static function durationNanos(array $span): ?int
     {
-        if (! isset($span['startTimeUnixNano'], $span['endTimeUnixNano'])) {
+        if (!isset($span['startTimeUnixNano'], $span['endTimeUnixNano'])) {
             return null;
         }
 
-        return (int) $span['endTimeUnixNano'] - (int) $span['startTimeUnixNano'];
+        return (int)$span['endTimeUnixNano'] - (int)$span['startTimeUnixNano'];
     }
 }

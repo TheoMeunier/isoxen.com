@@ -34,9 +34,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Date::use(CarbonImmutable::class);
 
-        // Inertia props are never a top-level JSON:API response, so the
-        // "data" wrapping Eloquent Resources add by default only gets in
-        // the way of the frontend consuming a plain array/object.
+        // Inertia props are never a JSON:API response, so the default "data" wrapping only gets in the way.
         JsonResource::withoutWrapping();
 
         DB::prohibitDestructiveCommands(
@@ -44,14 +42,14 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Password::defaults(
-            fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
+            fn(): ?Password => app()->isProduction()
+                ? Password::min(12)
+                    ->mixedCase()
+                    ->letters()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised()
+                : null,
         );
     }
 }

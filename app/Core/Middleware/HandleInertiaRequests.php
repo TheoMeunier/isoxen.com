@@ -50,18 +50,7 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Share the project currently being viewed so the app sidebar can swap
-     * its navigation for that project's observability categories.
-     *
-     * Only resolved on routes bound to a project, and only for a user
-     * allowed to view it, so this costs one extra count query on project
-     * pages and nothing anywhere else.
-     *
-     * `observabilityCategories` is the same PHP-side list the {category}
-     * route constraint validates against (see ObservabilityCategories and
-     * routes/projects.php) -- sharing it here is what lets the sidebar build
-     * its nav from the backend's list instead of keeping its own hardcoded
-     * copy.
+     * Share the project being viewed, plus its categories and counts, so the sidebar can build its nav.
      *
      * @return array<string, mixed>
      */
