@@ -1,9 +1,4 @@
 import { Link } from '@inertiajs/react';
-import {
-    MethodBadge,
-    parseHttpMethod,
-    stripHttpMethod,
-} from '@/components/molecules/method-badge';
 import { StatusBadge } from '@/components/molecules/status-badge';
 import { formatDuration, formatTime } from '@/lib/datetime';
 import { show as showTrace } from '@/routes/projects/traces';
@@ -19,30 +14,25 @@ const SPAN_KINDS: Record<number, string> = {
 };
 
 /**
- * The entries table shared by every span-backed category (Requests, Jobs,
- * Commands, Scheduled Tasks, Exceptions, Queries, Notifications, Mail,
- * Cache, Outgoing Requests, Users). Requests is the only category that
- * shows an HTTP method column -- everything else's `name` is already the
- * whole story, or has a `detail` field carrying it instead (see
+ * The entries table shared by every span-backed category except Requests,
+ * which shows the Routes table instead (see RoutesTable) -- Jobs, Commands,
+ * Scheduled Tasks, Exceptions, Queries, Notifications, Mail, Cache,
+ * Outgoing Requests, and Users. Each category's `name` is already the whole
+ * story, or has a `detail` field carrying it instead (see
  * ObservabilityCategories' span parsers).
  */
 export function SpansTable({
     entries,
     projectId,
-    showMethod,
 }: {
     entries: SpanEntry[];
     projectId: number;
-    showMethod: boolean;
 }) {
     return (
         <table className="w-full text-left text-sm">
             <thead className="text-muted-foreground">
-                <tr className="border-b border-sidebar-border/70 dark:border-sidebar-border">
+                <tr className="border-sidebar-border/70 dark:border-sidebar-border border-b">
                     <th className="py-2 pr-4 font-medium">Time</th>
-                    {showMethod && (
-                        <th className="py-2 pr-4 font-medium">Method</th>
-                    )}
                     <th className="py-2 pr-4 font-medium">Name</th>
                     <th className="py-2 pr-4 font-medium">Kind</th>
                     <th className="py-2 pr-4 font-medium">Duration</th>
@@ -51,13 +41,8 @@ export function SpansTable({
             </thead>
             <tbody>
                 {entries.map((entry, i) => {
-                    const method = showMethod
-                        ? parseHttpMethod(entry.name)
-                        : null;
-                    const isDetailed = !showMethod && entry.detail != null;
-                    const name = showMethod
-                        ? stripHttpMethod(entry.name, method)
-                        : (entry.detail ?? entry.name ?? '—');
+                    const isDetailed = entry.detail != null;
+                    const name = entry.detail ?? entry.name ?? '—';
                     const nameContent = isDetailed ? (
                         <span
                             className="block max-w-[42rem] truncate font-mono text-xs"
@@ -72,16 +57,11 @@ export function SpansTable({
                     return (
                         <tr
                             key={`${entry.trace_id}-${entry.span_id}-${i}`}
-                            className="border-b border-sidebar-border/40 last:border-0 dark:border-sidebar-border/60"
+                            className="border-sidebar-border/40 dark:border-sidebar-border/60 border-b last:border-0"
                         >
-                            <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
+                            <td className="text-muted-foreground whitespace-nowrap py-2 pr-4">
                                 {formatTime(entry.time)}
                             </td>
-                            {showMethod && (
-                                <td className="py-2 pr-4">
-                                    <MethodBadge method={method} />
-                                </td>
-                            )}
                             <td className="py-2 pr-4">
                                 {entry.trace_id ? (
                                     <Link

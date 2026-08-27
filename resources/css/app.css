@@ -101,10 +101,10 @@
     --color-tone-warning-contrast: #c98500;
     --color-tone-critical: #c33c3c;
 
-    --color-method-post: #eb6834;
-    --color-method-post-contrast: #d95926;
-    --color-method-put: #1baf7a;
-    --color-method-put-contrast: #199e70;
+    --color-method-post: #1baf7a;
+    --color-method-post-contrast: #199e70;
+    --color-method-put: #2a78d6;
+    --color-method-put-contrast: #1f5fae;
     --color-method-delete: #e87ba4;
     --color-method-delete-contrast: #d55181;
 
@@ -155,10 +155,10 @@
     --color-tone-warning-contrast: #eda100;
     --color-tone-critical: #e66767;
 
-    --color-method-post: #d95926;
-    --color-method-post-contrast: #eb6834;
-    --color-method-put: #199e70;
-    --color-method-put-contrast: #1baf7a;
+    --color-method-post: #199e70;
+    --color-method-post-contrast: #1baf7a;
+    --color-method-put: #3987e5;
+    --color-method-put-contrast: #2a78d6;
     --color-method-delete: #d55181;
     --color-method-delete-contrast: #e87ba4;
 

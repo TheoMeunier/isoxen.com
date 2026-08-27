@@ -22,3 +22,17 @@ export function formatDuration(nanos: number | null): string {
 
     return formatDurationMs(nanos / 1000000);
 }
+/**
+ * The chart tooltip / axis-endpoint label shared by BarChart and LineChart --
+ * a longer, unambiguous form than {@see formatTime} since it stands alone
+ * without neighbouring rows to disambiguate the date.
+ */
+export function formatDateTimeLabel(at: string): string {
+    return new Date(at).toLocaleString(undefined, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}

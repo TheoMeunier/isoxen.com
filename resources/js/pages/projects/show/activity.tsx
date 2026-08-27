@@ -7,7 +7,7 @@ import { PeriodSelector } from '@/components/molecules/period-selector';
 import { EmptyState } from '@/components/organisms/empty-state';
 import { LogsTable } from '@/components/organisms/logs-table';
 import { MetricsTable } from '@/components/organisms/metrics-table';
-import { SlowEndpointsTable } from '@/components/organisms/slow-endpoints-table';
+import { RoutesTable } from '@/components/organisms/routes-table';
 import { SpansTable } from '@/components/organisms/spans-table';
 import { StatChartPanel } from '@/components/organisms/stat-chart-panel';
 import { Input } from '@/components/ui/input';
@@ -15,11 +15,11 @@ import { index, show } from '@/routes/projects';
 import type {
     CategorySummary,
     DurationPoint,
-    EndpointStat,
     LogEntry,
     MetricEntry,
     ObservabilityCategory,
     Paginated,
+    RouteStat,
     SpanEntry,
     StatusSegment,
     StatusTimelinePoint,
@@ -35,6 +35,7 @@ type ActivityCategory = Exclude<ObservabilityCategory, 'users'>;
 
 const LOGS_CATEGORY: ActivityCategory = 'logs';
 const METRICS_CATEGORY: ActivityCategory = 'metrics';
+const REQUESTS_CATEGORY: ActivityCategory = 'requests';
 
 const CATEGORY_LABELS: Record<ActivityCategory, string> = {
     requests: 'Requests',
@@ -63,7 +64,7 @@ export default function ProjectsShowActivity({
     durationTimeline,
     statusBreakdown,
     statusTimeline,
-    slowEndpoints,
+    routes,
 }: {
     project: Project;
     activeCategory: ActivityCategory;
@@ -73,7 +74,7 @@ export default function ProjectsShowActivity({
     durationTimeline: DurationPoint[];
     statusBreakdown: StatusSegment[];
     statusTimeline: StatusTimelinePoint[];
-    slowEndpoints: EndpointStat[];
+    routes: RouteStat[];
 }) {
     const [search, setSearch] = useState('');
 
@@ -130,6 +131,7 @@ export default function ProjectsShowActivity({
 
                     {hasDuration && (
                         <StatChartPanel
+                            chart="line"
                             title="Duration"
                             headline={
                                 summary.avg_ms !== null
@@ -169,77 +171,78 @@ export default function ProjectsShowActivity({
                     )}
                 </div>
 
-                {activeCategory === 'requests' && slowEndpoints.length > 0 && (
-                    <SlowEndpointsTable endpoints={slowEndpoints} />
-                )}
+                {activeCategory === REQUESTS_CATEGORY ? (
+                    <RoutesTable routes={routes} />
+                ) : (
+                    <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border">
+                        <div className="border-sidebar-border/70 dark:border-sidebar-border flex items-center justify-between gap-4 border-b px-4 py-3">
+                            <p className="font-medium">
+                                {summary.total.toLocaleString()}{' '}
+                                {CATEGORY_LABELS[activeCategory]}
+                            </p>
 
-                <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-                    <div className="flex items-center justify-between gap-4 border-b border-sidebar-border/70 px-4 py-3 dark:border-sidebar-border">
-                        <p className="font-medium">
-                            {summary.total.toLocaleString()}{' '}
-                            {CATEGORY_LABELS[activeCategory]}
-                        </p>
-
-                        {entries.data.length > 0 && (
-                            <div className="relative w-full max-w-64">
-                                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                                <Input
-                                    type="search"
-                                    placeholder={`Search ${CATEGORY_LABELS[activeCategory].toLowerCase()} on this page`}
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="h-8 pl-8 text-sm"
-                                />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="p-4">
-                        {entries.data.length === 0 ? (
-                            <EmptyState
-                                message={`Once your app starts sending ${CATEGORY_LABELS[activeCategory].toLowerCase()} with this token, they'll show up here.`}
-                            />
-                        ) : searchedEntries.length === 0 ? (
-                            <EmptyState
-                                message={`No ${CATEGORY_LABELS[activeCategory].toLowerCase()} on this page match "${search}".`}
-                            />
-                        ) : (
-                            <div className="space-y-4">
-                                {activeCategory === LOGS_CATEGORY && (
-                                    <LogsTable
-                                        entries={searchedEntries as LogEntry[]}
-                                    />
-                                )}
-                                {activeCategory === METRICS_CATEGORY && (
-                                    <MetricsTable
-                                        entries={
-                                            searchedEntries as MetricEntry[]
+                            {entries.data.length > 0 && (
+                                <div className="relative w-full max-w-64">
+                                    <Search className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2" />
+                                    <Input
+                                        type="search"
+                                        placeholder={`Search ${CATEGORY_LABELS[activeCategory].toLowerCase()} on this page`}
+                                        value={search}
+                                        onChange={(e) =>
+                                            setSearch(e.target.value)
                                         }
+                                        className="h-8 pl-8 text-sm"
                                     />
-                                )}
-                                {activeCategory !== LOGS_CATEGORY &&
-                                    activeCategory !== METRICS_CATEGORY && (
-                                        <SpansTable
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-4">
+                            {entries.data.length === 0 ? (
+                                <EmptyState
+                                    message={`Once your app starts sending ${CATEGORY_LABELS[activeCategory].toLowerCase()} with this token, they'll show up here.`}
+                                />
+                            ) : searchedEntries.length === 0 ? (
+                                <EmptyState
+                                    message={`No ${CATEGORY_LABELS[activeCategory].toLowerCase()} on this page match "${search}".`}
+                                />
+                            ) : (
+                                <div className="space-y-4">
+                                    {activeCategory === LOGS_CATEGORY && (
+                                        <LogsTable
                                             entries={
-                                                searchedEntries as SpanEntry[]
-                                            }
-                                            projectId={project.id}
-                                            showMethod={
-                                                activeCategory === 'requests'
+                                                searchedEntries as LogEntry[]
                                             }
                                         />
                                     )}
+                                    {activeCategory === METRICS_CATEGORY && (
+                                        <MetricsTable
+                                            entries={
+                                                searchedEntries as MetricEntry[]
+                                            }
+                                        />
+                                    )}
+                                    {activeCategory !== LOGS_CATEGORY &&
+                                        activeCategory !== METRICS_CATEGORY && (
+                                            <SpansTable
+                                                entries={
+                                                    searchedEntries as SpanEntry[]
+                                                }
+                                                projectId={project.id}
+                                            />
+                                        )}
 
-                                <PagerLinks
-                                    meta={entries}
-                                    itemLabel={CATEGORY_LABELS[
-                                        activeCategory
-                                    ].toLowerCase()}
-                                />
-                            </div>
-                        )}
+                                    <PagerLinks
+                                        meta={entries}
+                                        itemLabel={CATEGORY_LABELS[
+                                            activeCategory
+                                        ].toLowerCase()}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </>
     );

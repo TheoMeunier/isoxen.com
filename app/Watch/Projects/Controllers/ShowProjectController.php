@@ -17,7 +17,7 @@ use App\Watch\Ingestion\Queries\RecentLogsQuery;
 use App\Watch\Ingestion\Queries\RecentMetricsQuery;
 use App\Watch\Ingestion\Queries\RecentSpansQuery;
 use App\Watch\Ingestion\Queries\RequestStatusBreakdownQuery;
-use App\Watch\Ingestion\Queries\SlowEndpointsQuery;
+use App\Watch\Ingestion\Queries\RouteStatsQuery;
 use App\Watch\Ingestion\Queries\StatusTimelineQuery;
 use App\Watch\Ingestion\Support\ObservabilityCategories;
 use App\Watch\Projects\Models\Project;
@@ -48,7 +48,7 @@ class ShowProjectController extends Controller
         private readonly ActivityTimelineQuery $activityTimelineQuery,
         private readonly DurationTimelineQuery $durationTimelineQuery,
         private readonly CategorySummaryQuery $categorySummaryQuery,
-        private readonly SlowEndpointsQuery $slowEndpointsQuery,
+        private readonly RouteStatsQuery $routeStatsQuery,
         private readonly RequestStatusBreakdownQuery $requestStatusBreakdownQuery,
         private readonly LogSeverityBreakdownQuery $logSeverityBreakdownQuery,
         private readonly StatusTimelineQuery $statusTimelineQuery,
@@ -128,10 +128,13 @@ class ShowProjectController extends Controller
         return Inertia::render('projects/show/activity', [
             'project'        => new ProjectResource($project),
             'activeCategory' => $categorySlug,
-            'entries'        => fn (): \Illuminate\Pagination\LengthAwarePaginator => match ($category['source']) {
-                'metrics' => $this->recentMetricsQuery->execute($project),
-                'logs'    => $this->recentLogsQuery->execute($project),
-                default   => $this->recentSpansQuery->execute($project, $category['type']),
+            // Requests shows the Routes table below instead of individual entries (see routes/), so
+            // there's nothing worth paginating here -- an empty page skips that query entirely.
+            'entries' => fn (): \Illuminate\Pagination\LengthAwarePaginator => match (true) {
+                $categorySlug       === 'requests'       => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25),
+                $category['source'] === 'metrics'  => $this->recentMetricsQuery->execute($project),
+                $category['source'] === 'logs'     => $this->recentLogsQuery->execute($project),
+                default                            => $this->recentSpansQuery->execute($project, $category['type']),
             },
             'summary'          => $resolveSummary,
             'timeline'         => fn (): array => $this->activityTimelineQuery->execute($project, $model, $category['type']),
@@ -140,8 +143,8 @@ class ShowProjectController extends Controller
                 : [],
             'statusBreakdown' => fn (): array => $this->statusBreakdown($project, $categorySlug, $model, $resolveSummary()),
             'statusTimeline'  => fn (): array => $this->statusTimeline($project, $categorySlug, $model, $category['type']),
-            'slowEndpoints'   => fn (): \Illuminate\Support\Collection => $categorySlug === 'requests'
-                ? $this->slowEndpointsQuery->execute($project)
+            'routes'          => fn (): \Illuminate\Support\Collection => $categorySlug === 'requests'
+                ? $this->routeStatsQuery->execute($project)
                 : collect(),
         ]);
     }

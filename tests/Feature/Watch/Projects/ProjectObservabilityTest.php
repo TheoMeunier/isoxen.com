@@ -40,8 +40,9 @@ test('the requests category is the project\'s default view', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('projects/show/activity')
             ->where('activeCategory', 'requests')
-            ->has('entries.data', 1)
-            ->where('entries.data.0.name', 'GET /orders'));
+            // Requests shows the Routes table (see RouteStatsTest) instead of individual
+            // entries, so there's nothing to paginate here.
+            ->has('entries.data', 0));
 });
 
 test('switching category filters spans by their type', function () {

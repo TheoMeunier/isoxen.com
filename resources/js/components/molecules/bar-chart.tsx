@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateTimeLabel } from '@/lib/datetime';
 import { TONE_DOT } from '@/lib/tone';
 import type { Tone } from '@/lib/tone';
 
@@ -7,7 +8,12 @@ export type BarPoint = { at: string; segments: BarSegment[] };
 
 const PLOT_HEIGHT = 120;
 
-function niceCeiling(max: number): number {
+/**
+ * Rounds a chart's max value up to a "nice" axis ceiling (5, then a round
+ * number in the max's own order of magnitude) -- shared with LineChart so
+ * the two chart types scale their gridlines the same way.
+ */
+export function niceCeiling(max: number): number {
     if (max <= 5) {
         return 5;
     }
@@ -16,16 +22,6 @@ function niceCeiling(max: number): number {
     const step = magnitude / 2;
 
     return Math.ceil(max / step) * step;
-}
-
-function fullDateLabel(at: string): string {
-    return new Date(at).toLocaleString(undefined, {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
 }
 
 /**
@@ -63,7 +59,7 @@ export function BarChart({
                 {[0, 0.5, 1].map((fraction) => (
                     <div
                         key={fraction}
-                        className="pointer-events-none absolute right-0 left-0 border-t border-sidebar-border/50 dark:border-sidebar-border"
+                        className="border-sidebar-border/50 dark:border-sidebar-border pointer-events-none absolute left-0 right-0 border-t"
                         style={{ top: fraction * PLOT_HEIGHT }}
                     />
                 ))}
@@ -113,7 +109,7 @@ export function BarChart({
 
                             {hovered === index && total > 0 && (
                                 <div
-                                    className={`pointer-events-none absolute bottom-full z-10 mb-2 w-max space-y-1 rounded-md border border-sidebar-border/70 bg-background px-2 py-1.5 text-xs shadow-sm dark:border-sidebar-border ${
+                                    className={`border-sidebar-border/70 bg-background dark:border-sidebar-border pointer-events-none absolute bottom-full z-10 mb-2 w-max space-y-1 rounded-md border px-2 py-1.5 text-xs shadow-sm ${
                                         index < 3
                                             ? 'left-0'
                                             : index > points.length - 4
@@ -122,7 +118,7 @@ export function BarChart({
                                     }`}
                                 >
                                     <p className="font-medium">
-                                        {fullDateLabel(point.at)}
+                                        {formatDateTimeLabel(point.at)}
                                     </p>
                                     {visibleSegments.map((segment) => (
                                         <p
@@ -148,17 +144,17 @@ export function BarChart({
                 })}
 
                 {!hasData && (
-                    <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                    <div className="text-muted-foreground absolute inset-0 flex items-center justify-center text-sm">
                         —
                     </div>
                 )}
             </div>
 
-            <div className="mt-2 flex justify-between text-xs text-muted-foreground tabular-nums">
-                <span>{points[0] && fullDateLabel(points[0].at)}</span>
+            <div className="text-muted-foreground mt-2 flex justify-between text-xs tabular-nums">
+                <span>{points[0] && formatDateTimeLabel(points[0].at)}</span>
                 <span>
                     {points.length > 0 &&
-                        fullDateLabel(points[points.length - 1].at)}
+                        formatDateTimeLabel(points[points.length - 1].at)}
                 </span>
             </div>
         </div>

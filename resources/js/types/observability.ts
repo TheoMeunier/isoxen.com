@@ -84,14 +84,20 @@ export type StatusTimelinePoint = {
     at: string;
     segments: StatusSegment[];
 };
-export type EndpointStat = {
-    name: string;
+/**
+ * One row of the Requests page's Routes table -- a path grouped across every
+ * method it was seen with (see RouteStatsQuery), with its status-class
+ * breakdown and duration percentiles over the window.
+ */
+export type RouteStat = {
+    methods: string;
+    path: string;
     total: number;
-    errors: number;
+    success: number;
+    client_error: number;
+    server_error: number;
     avg_ms: number;
-    p50_ms: number;
     p95_ms: number;
-    p99_ms: number;
 };
 export type OnlineUser = {
     id: string;
