@@ -99,6 +99,43 @@ export type RouteStat = {
     avg_ms: number;
     p95_ms: number;
 };
+/**
+ * One row of the Exceptions page's grouped list -- every occurrence of "the
+ * same exception" (see ExceptionFingerprint) collapsed into one row, ranked
+ * by last seen so a recurring failure doesn't get buried under whichever
+ * exception fired most recently (see ExceptionGroupsQuery).
+ */
+export type ExceptionGroup = {
+    fingerprint: string;
+    type: string;
+    message: string | null;
+    file: string | null;
+    line: number | null;
+    http_status: number | null;
+    occurrences: number;
+    first_seen: string;
+    last_seen: string;
+    trace_id: string | null;
+};
+/**
+ * The exception detail page's payload -- one fingerprint's full picture
+ * across the lookback window (see ExceptionOccurrencesQuery).
+ */
+export type ExceptionDetail = {
+    type: string;
+    message: string | null;
+    file: string | null;
+    line: number | null;
+    http_status: number | null;
+    occurrences_24h: number;
+    occurrences_7d: number;
+    occurrences_30d: number;
+    first_seen: string;
+    last_seen: string;
+    first_trace_id: string | null;
+    last_trace_id: string | null;
+    stacktrace: string | null;
+};
 export type OnlineUser = {
     id: string;
     name: string | null;

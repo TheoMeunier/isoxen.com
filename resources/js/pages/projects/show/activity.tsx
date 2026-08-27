@@ -5,6 +5,7 @@ import { CategoryHeader } from '@/components/molecules/category-header';
 import { PagerLinks } from '@/components/molecules/pager-links';
 import { PeriodSelector } from '@/components/molecules/period-selector';
 import { EmptyState } from '@/components/organisms/empty-state';
+import { ExceptionsTable } from '@/components/organisms/exceptions-table';
 import { LogsTable } from '@/components/organisms/logs-table';
 import { MetricsTable } from '@/components/organisms/metrics-table';
 import { RoutesTable } from '@/components/organisms/routes-table';
@@ -15,6 +16,7 @@ import { index, show } from '@/routes/projects';
 import type {
     CategorySummary,
     DurationPoint,
+    ExceptionGroup,
     LogEntry,
     MetricEntry,
     ObservabilityCategory,
@@ -36,6 +38,7 @@ type ActivityCategory = Exclude<ObservabilityCategory, 'users'>;
 const LOGS_CATEGORY: ActivityCategory = 'logs';
 const METRICS_CATEGORY: ActivityCategory = 'metrics';
 const REQUESTS_CATEGORY: ActivityCategory = 'requests';
+const EXCEPTIONS_CATEGORY: ActivityCategory = 'exceptions';
 
 const CATEGORY_LABELS: Record<ActivityCategory, string> = {
     requests: 'Requests',
@@ -65,6 +68,7 @@ export default function ProjectsShowActivity({
     statusBreakdown,
     statusTimeline,
     routes,
+    exceptionGroups,
 }: {
     project: Project;
     activeCategory: ActivityCategory;
@@ -75,6 +79,7 @@ export default function ProjectsShowActivity({
     statusBreakdown: StatusSegment[];
     statusTimeline: StatusTimelinePoint[];
     routes: RouteStat[];
+    exceptionGroups: ExceptionGroup[];
 }) {
     const [search, setSearch] = useState('');
 
@@ -173,9 +178,14 @@ export default function ProjectsShowActivity({
 
                 {activeCategory === REQUESTS_CATEGORY ? (
                     <RoutesTable routes={routes} />
+                ) : activeCategory === EXCEPTIONS_CATEGORY ? (
+                    <ExceptionsTable
+                        projectId={project.id}
+                        groups={exceptionGroups}
+                    />
                 ) : (
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border">
-                        <div className="border-sidebar-border/70 dark:border-sidebar-border flex items-center justify-between gap-4 border-b px-4 py-3">
+                    <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                        <div className="flex items-center justify-between gap-4 border-b border-sidebar-border/70 px-4 py-3 dark:border-sidebar-border">
                             <p className="font-medium">
                                 {summary.total.toLocaleString()}{' '}
                                 {CATEGORY_LABELS[activeCategory]}
@@ -183,7 +193,7 @@ export default function ProjectsShowActivity({
 
                             {entries.data.length > 0 && (
                                 <div className="relative w-full max-w-64">
-                                    <Search className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2" />
+                                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
                                     <Input
                                         type="search"
                                         placeholder={`Search ${CATEGORY_LABELS[activeCategory].toLowerCase()} on this page`}

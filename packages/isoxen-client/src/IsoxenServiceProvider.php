@@ -221,13 +221,23 @@ class IsoxenServiceProvider extends PackageServiceProvider
                 // ...and recorded a second time as its own span, so the
                 // Exceptions tab can show it even when nothing else about
                 // the surrounding trace is interesting.
-                $span = Facades\Tracer::newSpan(class_basename($e))
+                $builder = Facades\Tracer::newSpan(class_basename($e))
                     ->setAttribute(SpanType::ATTRIBUTE, SpanType::Exception->value)
                     ->setAttribute('exception.type', $e::class)
                     ->setAttribute('exception.message', $e->getMessage())
                     ->setAttribute('code.file.path', $e->getFile())
-                    ->setAttribute('code.line.number', $e->getLine())
-                    ->start();
+                    ->setAttribute('code.line.number', $e->getLine());
+
+                $statusCode = $this->resolveHttpStatusCode($e);
+
+                if ($statusCode !== null) {
+                    // Same attribute name request spans use
+                    // (http.response.status_code), so the server's queries
+                    // don't need a second key to look for.
+                    $builder = $builder->setAttribute('http.response.status_code', $statusCode);
+                }
+
+                $span = $builder->start();
 
                 $span->recordException($e)->setStatus(StatusCode::STATUS_ERROR);
                 $span->end();
@@ -240,6 +250,47 @@ class IsoxenServiceProvider extends PackageServiceProvider
         $value = config("isoxen.sensors.{$sensor}", true);
 
         return is_array($value) ? (bool) ($value['enabled'] ?? true) : (bool) $value;
+    }
+
+    /**
+     * The HTTP status code an exception maps to, when that can be known
+     * without guessing -- an HttpExceptionInterface carries its own status,
+     * and a failed outgoing HTTP call (Guzzle or Laravel's HTTP client
+     * wrapper) carries the response status that triggered it. Anything
+     * else (a fatal error during boot, a broken queue job, a console
+     * command) has no reliable status code, so this returns null rather
+     * than assume every uncaught exception becomes a 500 -- plenty don't
+     * happen in an HTTP context at all.
+     */
+    protected function resolveHttpStatusCode(Throwable $e): ?int
+    {
+        if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+            return $e->getStatusCode();
+        }
+
+        if ($e instanceof \Illuminate\Http\Client\RequestException) {
+            return $e->response->status();
+        }
+
+        if (class_exists(\GuzzleHttp\Exception\RequestException::class)
+            && $e instanceof \GuzzleHttp\Exception\RequestException
+            && $e->hasResponse()) {
+            return $e->getResponse()?->getStatusCode();
+        }
+
+        if ($e instanceof \Illuminate\Auth\AuthenticationException) {
+            return 401;
+        }
+
+        if ($e instanceof \Illuminate\Auth\Access\AuthorizationException) {
+            return 403;
+        }
+
+        if ($e instanceof \Illuminate\Session\TokenMismatchException) {
+            return 419;
+        }
+
+        return null;
     }
 
     protected function configureEnvironmentVariables(): void

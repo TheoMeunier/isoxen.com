@@ -7,6 +7,7 @@ use App\Watch\Projects\Controllers\CreateProjectController;
 use App\Watch\Projects\Controllers\DeleteProjectController;
 use App\Watch\Projects\Controllers\EditProjectController;
 use App\Watch\Projects\Controllers\ListProjectsController;
+use App\Watch\Projects\Controllers\ShowExceptionController;
 use App\Watch\Projects\Controllers\ShowProjectController;
 use App\Watch\Projects\Controllers\ShowTraceController;
 use Illuminate\Support\Facades\Route;
@@ -38,4 +39,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('projects/{project}/traces/{trace}', [ShowTraceController::class, 'render'])
         ->where('trace', '[0-9a-f]{32}')
         ->name('projects.traces.show');
+
+    // Fingerprints are sha256 hex (see ExceptionFingerprint), so the
+    // constraint doubles as a quick 404 for obviously-wrong URLs.
+    Route::get('projects/{project}/exceptions/{fingerprint}', [ShowExceptionController::class, 'render'])
+        ->where('fingerprint', '[0-9a-f]{64}')
+        ->name('projects.exceptions.show');
 });
