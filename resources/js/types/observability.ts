@@ -104,6 +104,18 @@ export type CurrentProject = {
     name: string;
     slug: string;
 };
+/**
+ * One tile on the project's Overview tab: a category's 24h volume and error
+ * count (see ProjectHealthOverviewQuery). `slug` excludes 'users', which
+ * isn't a volume/error category.
+ */
+export type CategoryHealth = {
+    slug: Exclude<ObservabilityCategory, 'users'>;
+    label: string;
+    group: 'activity' | 'monitoring';
+    total: number;
+    errors: number;
+};
 export type ObservabilityCategory =
     | 'requests'
     | 'jobs'

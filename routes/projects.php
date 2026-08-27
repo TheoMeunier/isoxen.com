@@ -22,9 +22,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('projects.show-redirect');
 
     // The category is a path segment, not a query string, so an unknown
-    // slug 404s here before it ever reaches the controller.
+    // slug 404s here before it ever reaches the controller. 'information'
+    // and 'overview' are pseudo-categories -- project settings and the
+    // cross-category health summary -- neither backed by an entry in
+    // ObservabilityCategories, so they're added on top of it here.
     Route::get('projects/{project}/{category}', [ShowProjectController::class, 'render'])
-        ->where('category', implode('|', [...array_keys(ObservabilityCategories::all()), 'information']))
+        ->where('category', implode('|', [...array_keys(ObservabilityCategories::all()), 'information', 'overview']))
         ->name('projects.show');
 
     Route::put('projects/{project}', [EditProjectController::class, 'execute'])->name('projects.update');

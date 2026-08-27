@@ -12,6 +12,7 @@ use App\Watch\Ingestion\Queries\CategorySummaryQuery;
 use App\Watch\Ingestion\Queries\DurationTimelineQuery;
 use App\Watch\Ingestion\Queries\LogSeverityBreakdownQuery;
 use App\Watch\Ingestion\Queries\OnlineUsersQuery;
+use App\Watch\Ingestion\Queries\ProjectHealthOverviewQuery;
 use App\Watch\Ingestion\Queries\RecentLogsQuery;
 use App\Watch\Ingestion\Queries\RecentMetricsQuery;
 use App\Watch\Ingestion\Queries\RecentSpansQuery;
@@ -52,6 +53,7 @@ class ShowProjectController extends Controller
         private readonly LogSeverityBreakdownQuery $logSeverityBreakdownQuery,
         private readonly StatusTimelineQuery $statusTimelineQuery,
         private readonly OnlineUsersQuery $onlineUsersQuery,
+        private readonly ProjectHealthOverviewQuery $projectHealthOverviewQuery,
     ) {}
 
     public function redirectToDefaultCategory(Project $project): RedirectResponse
@@ -72,6 +74,10 @@ class ShowProjectController extends Controller
             return $this->renderInformation($project);
         }
 
+        if ($category === 'overview') {
+            return $this->renderOverview($project);
+        }
+
         abort_unless(ObservabilityCategories::isValid($category), 404);
 
         if ($category === 'users') {
@@ -85,6 +91,19 @@ class ShowProjectController extends Controller
     {
         return Inertia::render('projects/show/information', [
             'project' => new ProjectResource($project),
+        ]);
+    }
+
+    /**
+     * The project's landing summary: every category's 24h volume and error count in one screen, so
+     * "is anything broken right now" doesn't require clicking through each tab.
+     */
+    private function renderOverview(Project $project): Response
+    {
+        return Inertia::render('projects/show/overview', [
+            'project'     => new ProjectResource($project),
+            'categories'  => fn (): array => $this->projectHealthOverviewQuery->execute($project),
+            'onlineUsers' => fn (): int => count($this->onlineUsersQuery->execute($project)),
         ]);
     }
 

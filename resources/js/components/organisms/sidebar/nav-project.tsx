@@ -8,6 +8,7 @@ import {
     BriefcaseBusiness,
     CalendarClock,
     Database,
+    Gauge,
     Globe,
     Info,
     Mail,
@@ -37,7 +38,9 @@ import type {
 // Everything else about a category (label, type, enabled, group) comes from
 // the `observabilityCategories` shared prop -- see HandleInertiaRequests and
 // ObservabilityCategories.php, the single source of truth for that data.
-const CATEGORY_ICONS: Record<ObservabilityCategory, LucideIcon> = {
+// Exported so the Overview tab's category grid (a different view of the
+// same slugs) doesn't need its own copy.
+export const CATEGORY_ICONS: Record<ObservabilityCategory, LucideIcon> = {
     requests: Globe,
     jobs: BriefcaseBusiness,
     commands: Braces,
@@ -100,7 +103,10 @@ function CategoryItem({
                 isActive={active}
                 tooltip={{ children: label }}
             >
-                <Link href={show({ project: projectId, category: slug })} prefetch>
+                <Link
+                    href={show({ project: projectId, category: slug })}
+                    prefetch
+                >
                     <Icon />
                     <span>{label}</span>
                 </Link>
@@ -157,9 +163,7 @@ function CategoryGroup({
                         projectId={project.id}
                         active={active === slug}
                         count={
-                            category.type
-                                ? counts[category.type]
-                                : undefined
+                            category.type ? counts[category.type] : undefined
                         }
                     />
                 ))}
@@ -183,7 +187,8 @@ export function NavProject({
     const { props } = usePage<{
         observabilityCategories?: ObservabilityCategories;
     }>();
-    const categories = props.observabilityCategories ?? ({} as ObservabilityCategories);
+    const categories =
+        props.observabilityCategories ?? ({} as ObservabilityCategories);
 
     return (
         <>
@@ -206,6 +211,25 @@ export function NavProject({
             <SidebarGroup className="px-2 py-0">
                 <SidebarGroupLabel>Project</SidebarGroupLabel>
                 <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            asChild
+                            isActive={active === 'overview'}
+                            tooltip={{ children: 'Overview' }}
+                        >
+                            <Link
+                                href={show({
+                                    project: project.id,
+                                    category: 'overview',
+                                })}
+                                prefetch
+                            >
+                                <Gauge />
+                                <span>Overview</span>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             asChild
