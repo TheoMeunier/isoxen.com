@@ -6,6 +6,7 @@ import {
     Copy,
     Globe,
     Search,
+    TriangleAlert,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { MethodBadge } from '@/components/molecules/method-badge';
@@ -84,14 +85,14 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
         <div>
             <div className="flex items-center justify-between gap-4 px-4 py-3">
                 <p className="flex items-center gap-2 text-lg font-medium">
-                    <Globe className="text-muted-foreground size-5" />
+                    <Globe className="size-5 text-muted-foreground" />
                     {routes.length.toLocaleString()}{' '}
                     {routes.length === 1 ? 'Route' : 'Routes'}
                 </p>
 
                 {routes.length > 0 && (
                     <div className="relative w-full max-w-64">
-                        <Search className="text-muted-foreground pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2" />
+                        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             type="search"
                             placeholder="Search routes"
@@ -112,24 +113,24 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left font-mono text-xs">
                             <thead className="text-muted-foreground">
-                                <tr className="border-sidebar-border/70 dark:border-sidebar-border border-b">
-                                    <th className="py-2 pr-4 font-medium uppercase tracking-wide">
+                                <tr className="border-b border-sidebar-border/70 dark:border-sidebar-border">
+                                    <th className="py-2 pr-4 font-medium tracking-wide uppercase">
                                         Method
                                     </th>
-                                    <th className="py-2 pr-4 font-medium uppercase tracking-wide">
+                                    <th className="py-2 pr-4 font-medium tracking-wide uppercase">
                                         Path
                                     </th>
                                     {COLUMNS.map((column) => (
                                         <th
                                             key={column.key}
-                                            className="py-2 pr-4 font-medium uppercase tracking-wide"
+                                            className="py-2 pr-4 font-medium tracking-wide uppercase"
                                         >
                                             <button
                                                 type="button"
                                                 onClick={() =>
                                                     toggleSort(column.key)
                                                 }
-                                                className="hover:text-foreground inline-flex items-center gap-1"
+                                                className="inline-flex items-center gap-1 hover:text-foreground"
                                             >
                                                 {column.label}
                                                 {sortKey === column.key ? (
@@ -151,9 +152,9 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                                 {sorted.map((route) => (
                                     <tr
                                         key={route.path}
-                                        className="border-sidebar-border/40 dark:border-sidebar-border/60 border-b last:border-0"
+                                        className="border-b border-sidebar-border/40 last:border-0 dark:border-sidebar-border/60"
                                     >
-                                        <td className="whitespace-nowrap py-2 pr-4">
+                                        <td className="py-2 pr-4 whitespace-nowrap">
                                             <div className="flex flex-wrap gap-1">
                                                 {route.methods
                                                     .split('|')
@@ -167,7 +168,7 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                                         </td>
                                         <td className="max-w-xs py-2 pr-4">
                                             <span className="flex items-center gap-1.5 truncate font-medium">
-                                                <Globe className="text-muted-foreground size-3.5 shrink-0" />
+                                                <Globe className="size-3.5 shrink-0 text-muted-foreground" />
                                                 <span
                                                     className="truncate"
                                                     title={route.path}
@@ -181,7 +182,8 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                                         </td>
                                         <td className="py-2 pr-4 tabular-nums">
                                             {route.client_error > 0 ? (
-                                                <span className="text-[var(--color-tone-warning-contrast)]">
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-tone-warning)]/10 px-2 py-0.5 font-semibold text-[var(--color-tone-warning-contrast)] dark:bg-[var(--color-tone-warning)]/15">
+                                                    <TriangleAlert className="size-3 shrink-0" />
                                                     {route.client_error.toLocaleString()}
                                                 </span>
                                             ) : (
@@ -192,7 +194,8 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                                         </td>
                                         <td className="py-2 pr-4 tabular-nums">
                                             {route.server_error > 0 ? (
-                                                <span className="text-[var(--color-tone-critical)]">
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-tone-critical)]/10 px-2 py-0.5 font-semibold text-[var(--color-tone-critical)] dark:bg-[var(--color-tone-critical)]/15">
+                                                    <TriangleAlert className="size-3 shrink-0" />
                                                     {route.server_error.toLocaleString()}
                                                 </span>
                                             ) : (
@@ -204,7 +207,7 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                                         <td className="py-2 pr-4 font-medium tabular-nums">
                                             {route.total.toLocaleString()}
                                         </td>
-                                        <td className="text-muted-foreground py-2 pr-4 tabular-nums">
+                                        <td className="py-2 pr-4 text-muted-foreground tabular-nums">
                                             {formatDurationMs(route.avg_ms)}
                                         </td>
                                         <td className="py-2 pr-4 tabular-nums">
@@ -217,7 +220,7 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                                                     copyPath(route.path)
                                                 }
                                                 title="Copy path"
-                                                className="text-muted-foreground hover:bg-accent hover:text-foreground rounded p-1"
+                                                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
                                             >
                                                 {copiedPath === route.path ? (
                                                     <Check className="size-3.5" />
