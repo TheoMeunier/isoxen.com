@@ -74,6 +74,7 @@ export type TimelinePoint = {
 export type DurationPoint = {
     at: string;
     avg_ms: number | null;
+    p95_ms: number | null;
 };
 export type StatusSegment = {
     label: string;
@@ -107,11 +108,51 @@ export type RouteStat = {
  */
 export type QueryStat = {
     query: string;
+    fingerprint: string;
     system: string | null;
     calls: number;
     total_ms: number;
     avg_ms: number;
     p95_ms: number;
+};
+export type QueryTimelinePoint = {
+    at: string;
+    calls: number;
+    avg_ms: number | null;
+    p95_ms: number | null;
+};
+export type QueryOccurrence = {
+    time: string;
+    duration_ms: number;
+    trace_id: string | null;
+    span_id: string | null;
+    caller: string | null;
+    caller_file: string | null;
+    caller_line: number | null;
+    called_from: string | null;
+    called_from_type: string | null;
+};
+/**
+ * One SQL statement's full detail, addressed by fingerprint (see
+ * QueryOccurrencesQuery) -- shared by the Queries table's drawer and its
+ * dedicated detail page, since both show the same picture at two different
+ * sizes.
+ */
+export type QueryDetail = {
+    query: string;
+    fingerprint: string;
+    system: string | null;
+    namespace: string | null;
+    host: string | null;
+    port: number | null;
+    calls: number;
+    total_ms: number;
+    avg_ms: number;
+    p95_ms: number;
+    first_seen: string | null;
+    last_seen: string | null;
+    timeline: QueryTimelinePoint[];
+    occurrences: QueryOccurrence[];
 };
 /**
  * One row of the Exceptions page's grouped list -- every occurrence of "the

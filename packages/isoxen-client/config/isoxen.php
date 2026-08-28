@@ -227,7 +227,18 @@ return [
 
         'outgoing_requests' => env('ISOXEN_SENSOR_OUTGOING_REQUESTS', true),
 
-        'queries' => env('ISOXEN_SENSOR_QUERIES', true),
+        'queries' => [
+            'enabled' => env('ISOXEN_SENSOR_QUERIES', true),
+
+            // Walks the call stack to find the first frame outside vendor/
+            // and attaches it to the span as code.file.path/code.line.number/
+            // code.function.name -- the class and method that issued the
+            // query (see CallerLocator). Bounded to a shallow stack depth so
+            // the cost per query stays small; never applied to the duration
+            // metric, only the span, since a label per call site would blow
+            // up that histogram's cardinality.
+            'capture_caller' => env('ISOXEN_SENSOR_QUERIES_CAPTURE_CALLER', true),
+        ],
 
         'redis' => env('ISOXEN_SENSOR_REDIS', true),
 

@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import {
     ArrowDown,
     ArrowUp,
@@ -5,17 +6,27 @@ import {
     Check,
     Copy,
     Database,
+    PanelRight,
     Search,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import type { MouseEvent } from 'react';
 import { EmptyState } from '@/components/organisms/empty-state';
+import { QueryDetailContent } from '@/components/organisms/query-detail';
 import { Input } from '@/components/ui/input';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import { formatDurationLong, formatDurationMs } from '@/lib/datetime';
 import { SqlHighlight } from '@/lib/sql-highlight';
 import { formatCompactNumber } from '@/lib/utils';
-import type { QueryStat } from '@/types/observability';
+import { show as showQuery } from '@/routes/projects/queries';
+import type { QueryDetail, QueryStat } from '@/types/observability';
 
-type SortKey = Exclude<keyof QueryStat, 'query' | 'system'>;
+type SortKey = Exclude<keyof QueryStat, 'query' | 'fingerprint' | 'system'>;
 
 const COLUMNS: { key: SortKey; label: string }[] = [
     { key: 'calls', label: 'Calls' },
@@ -31,12 +42,27 @@ const COLUMNS: { key: SortKey; label: string }[] = [
  * category, since a stream of individual query spans is far less useful
  * here than "which statements run often or run slow" (see QueryStatsQuery).
  * Column order and shape mirror Laravel Nightwatch's own Queries table.
+ *
+ * A row click navigates to that statement's full detail page; the drawer
+ * button fetches the same data as JSON (see ShowQueryController) and shows
+ * it in a side panel instead, for a look without leaving the table.
  */
-export function QueriesTable({ queries }: { queries: QueryStat[] }) {
+export function QueriesTable({
+    projectId,
+    queries,
+}: {
+    projectId: number;
+    queries: QueryStat[];
+}) {
     const [search, setSearch] = useState('');
     const [sortKey, setSortKey] = useState<SortKey>('calls');
     const [sortDesc, setSortDesc] = useState(true);
     const [copiedQuery, setCopiedQuery] = useState<string | null>(null);
+    const [drawerFingerprint, setDrawerFingerprint] = useState<string | null>(
+        null,
+    );
+    const [drawerDetail, setDrawerDetail] = useState<QueryDetail | null>(null);
+    const [drawerLoading, setDrawerLoading] = useState(false);
 
     const filtered = useMemo(
         () =>
@@ -63,7 +89,9 @@ export function QueriesTable({ queries }: { queries: QueryStat[] }) {
         }
     }
 
-    async function copyQuery(query: string) {
+    async function copyQuery(event: MouseEvent, query: string) {
+        event.stopPropagation();
+
         try {
             await navigator.clipboard.writeText(query);
             setCopiedQuery(query);
@@ -77,6 +105,30 @@ export function QueriesTable({ queries }: { queries: QueryStat[] }) {
         } catch {
             // Clipboard access can be denied by the browser -- nothing useful to
             // recover to here, so the icon just doesn't flip to a checkmark.
+        }
+    }
+
+    function openRow(fingerprint: string) {
+        router.visit(showQuery({ project: projectId, fingerprint }).url);
+    }
+
+    async function openDrawer(event: MouseEvent, fingerprint: string) {
+        event.stopPropagation();
+        setDrawerFingerprint(fingerprint);
+        setDrawerDetail(null);
+        setDrawerLoading(true);
+
+        try {
+            const response = await fetch(
+                showQuery({ project: projectId, fingerprint }).url,
+                { headers: { Accept: 'application/json' } },
+            );
+
+            if (response.ok) {
+                setDrawerDetail((await response.json()) as QueryDetail);
+            }
+        } finally {
+            setDrawerLoading(false);
         }
     }
 
@@ -150,15 +202,20 @@ export function QueriesTable({ queries }: { queries: QueryStat[] }) {
                             <tbody>
                                 {sorted.map((query) => (
                                     <tr
-                                        key={query.query}
-                                        className="border-b border-sidebar-border/40 last:border-0 dark:border-sidebar-border/60"
+                                        key={query.fingerprint}
+                                        onClick={() =>
+                                            openRow(query.fingerprint)
+                                        }
+                                        className="cursor-pointer border-b border-sidebar-border/40 last:border-0 hover:bg-accent/50 dark:border-sidebar-border/60"
                                     >
                                         <td className="max-w-xl py-2 pr-4">
                                             <span
                                                 className="block truncate"
                                                 title={query.query}
                                             >
-                                                <SqlHighlight sql={query.query} />
+                                                <SqlHighlight
+                                                    sql={query.query}
+                                                />
                                             </span>
                                         </td>
                                         <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
@@ -172,7 +229,9 @@ export function QueriesTable({ queries }: { queries: QueryStat[] }) {
                                                         : undefined
                                                 }
                                             >
-                                                {formatCompactNumber(query.calls)}
+                                                {formatCompactNumber(
+                                                    query.calls,
+                                                )}
                                             </span>
                                         </td>
                                         <td className="py-2 pr-4 tabular-nums">
@@ -185,20 +244,39 @@ export function QueriesTable({ queries }: { queries: QueryStat[] }) {
                                             {formatDurationMs(query.p95_ms)}
                                         </td>
                                         <td className="py-2 pl-2">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    copyQuery(query.query)
-                                                }
-                                                title="Copy query"
-                                                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                                            >
-                                                {copiedQuery === query.query ? (
-                                                    <Check className="size-3.5" />
-                                                ) : (
-                                                    <Copy className="size-3.5" />
-                                                )}
-                                            </button>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) =>
+                                                        copyQuery(
+                                                            e,
+                                                            query.query,
+                                                        )
+                                                    }
+                                                    title="Copy query"
+                                                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                >
+                                                    {copiedQuery ===
+                                                    query.query ? (
+                                                        <Check className="size-3.5" />
+                                                    ) : (
+                                                        <Copy className="size-3.5" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) =>
+                                                        openDrawer(
+                                                            e,
+                                                            query.fingerprint,
+                                                        )
+                                                    }
+                                                    title="Open details"
+                                                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                >
+                                                    <PanelRight className="size-3.5" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -207,6 +285,36 @@ export function QueriesTable({ queries }: { queries: QueryStat[] }) {
                     </div>
                 )}
             </div>
+
+            <Sheet
+                open={drawerFingerprint !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDrawerFingerprint(null);
+                        setDrawerDetail(null);
+                    }
+                }}
+            >
+                <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-2xl">
+                    <SheetHeader>
+                        <SheetTitle>Query details</SheetTitle>
+                    </SheetHeader>
+
+                    <div className="px-4 pb-4">
+                        {drawerLoading || !drawerDetail ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">
+                                Loading…
+                            </p>
+                        ) : (
+                            <QueryDetailContent
+                                projectId={projectId}
+                                detail={drawerDetail}
+                                chartLayout="stacked"
+                            />
+                        )}
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div>
     );
 }

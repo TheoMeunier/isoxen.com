@@ -174,6 +174,11 @@ export default function ProjectsShowActivity({
                                         value: point.avg_ms ?? 0,
                                         tone: 'neutral' as const,
                                     },
+                                    {
+                                        label: 'P95',
+                                        value: point.p95_ms ?? 0,
+                                        tone: 'warning' as const,
+                                    },
                                 ],
                             }))}
                             valueFormat={(value) => `${value.toFixed(1)} ms`}
@@ -184,7 +189,7 @@ export default function ProjectsShowActivity({
                 {activeCategory === REQUESTS_CATEGORY ? (
                     <RoutesTable routes={routes} />
                 ) : activeCategory === QUERIES_CATEGORY ? (
-                    <QueriesTable queries={queryStats} />
+                    <QueriesTable projectId={project.id} queries={queryStats} />
                 ) : activeCategory === EXCEPTIONS_CATEGORY ? (
                     <ExceptionsTable
                         projectId={project.id}

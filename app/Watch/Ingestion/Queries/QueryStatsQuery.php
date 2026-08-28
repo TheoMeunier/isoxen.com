@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Watch\Ingestion\Queries;
 
 use App\Watch\Ingestion\Models\OtelSpan;
+use App\Watch\Ingestion\Support\QueryFingerprint;
 use App\Watch\Projects\Models\Project;
 use Illuminate\Support\Collection;
 
@@ -18,14 +19,7 @@ use Illuminate\Support\Collection;
 class QueryStatsQuery
 {
     /**
-     * Statements with no `db.query.text` attribute (a driver that doesn't
-     * report it, or a malformed span) are grouped together here rather than
-     * silently dropped, so their volume still shows up as one row.
-     */
-    private const string UNKNOWN_QUERY = '(unknown query)';
-
-    /**
-     * @return Collection<int, object{query: string, system: string|null, calls: int, total_ms: float, avg_ms: float, p95_ms: float}>
+     * @return Collection<int, object{query: string, fingerprint: string, system: string|null, calls: int, total_ms: float, avg_ms: float, p95_ms: float}>
      */
     public function execute(Project $project, int $hours = 24): Collection
     {
@@ -46,7 +40,7 @@ class QueryStatsQuery
                     $attributes = json_decode((string) $row->attributes, true) ?? [];
 
                     $text = $attributes['db.query.text'] ?? null;
-                    $text = is_string($text) && $text !== '' ? $text : self::UNKNOWN_QUERY;
+                    $text = is_string($text) && $text !== '' ? $text : QueryFingerprint::UNKNOWN_QUERY;
 
                     $system = $attributes['db.system.name'] ?? null;
                     $system = is_string($system) && $system !== '' ? $system : null;
@@ -74,12 +68,13 @@ class QueryStatsQuery
                 $totalNanos = array_sum($durations);
 
                 return (object) [
-                    'query'    => $text,
-                    'system'   => $query['system'],
-                    'calls'    => $calls,
-                    'total_ms' => round($totalNanos / 1_000_000, 1),
-                    'avg_ms'   => $calls > 0 ? round($totalNanos / $calls / 1_000_000, 1) : 0.0,
-                    'p95_ms'   => $this->percentile($durations, 0.95),
+                    'query'       => $text,
+                    'fingerprint' => QueryFingerprint::make($text),
+                    'system'      => $query['system'],
+                    'calls'       => $calls,
+                    'total_ms'    => round($totalNanos / 1_000_000, 1),
+                    'avg_ms'      => $calls > 0 ? round($totalNanos / $calls / 1_000_000, 1) : 0.0,
+                    'p95_ms'      => $this->percentile($durations, 0.95),
                 ];
             })
             ->sortByDesc('calls')
