@@ -10,3 +10,16 @@ export function cn(...inputs: ClassValue[]) {
 export function toUrl(url: NonNullable<InertiaLinkProps['href']>): string {
     return typeof url === 'string' ? url : url.url;
 }
+
+/**
+ * A count at "k" scale rather than the full digit string -- QueriesTable's
+ * Calls column deals in tens of thousands per statement, and "60.9k" scans
+ * far faster in a dense table than "60,904".
+ */
+export function formatCompactNumber(value: number): string {
+    if (value < 1000) {
+        return value.toLocaleString();
+    }
+
+    return `${(value / 1000).toFixed(1)}k`;
+}

@@ -14,6 +14,7 @@ use App\Watch\Ingestion\Queries\ExceptionGroupsQuery;
 use App\Watch\Ingestion\Queries\LogSeverityBreakdownQuery;
 use App\Watch\Ingestion\Queries\OnlineUsersQuery;
 use App\Watch\Ingestion\Queries\ProjectHealthOverviewQuery;
+use App\Watch\Ingestion\Queries\QueryStatsQuery;
 use App\Watch\Ingestion\Queries\RecentLogsQuery;
 use App\Watch\Ingestion\Queries\RecentMetricsQuery;
 use App\Watch\Ingestion\Queries\RecentSpansQuery;
@@ -50,6 +51,7 @@ class ShowProjectController extends Controller
         private readonly DurationTimelineQuery $durationTimelineQuery,
         private readonly CategorySummaryQuery $categorySummaryQuery,
         private readonly RouteStatsQuery $routeStatsQuery,
+        private readonly QueryStatsQuery $queryStatsQuery,
         private readonly ExceptionGroupsQuery $exceptionGroupsQuery,
         private readonly RequestStatusBreakdownQuery $requestStatusBreakdownQuery,
         private readonly LogSeverityBreakdownQuery $logSeverityBreakdownQuery,
@@ -136,6 +138,7 @@ class ShowProjectController extends Controller
             'entries' => fn (): \Illuminate\Pagination\LengthAwarePaginator => match (true) {
                 $categorySlug       === 'requests'       => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25),
                 $categorySlug       === 'exceptions'     => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25),
+                $categorySlug       === 'queries'        => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25),
                 $category['source'] === 'metrics'        => $this->recentMetricsQuery->execute($project),
                 $category['source'] === 'logs'           => $this->recentLogsQuery->execute($project),
                 default                                  => $this->recentSpansQuery->execute($project, $category['type']),
@@ -149,6 +152,9 @@ class ShowProjectController extends Controller
             'statusTimeline'  => fn (): array => $this->statusTimeline($project, $categorySlug, $model, $category['type']),
             'routes'          => fn (): \Illuminate\Support\Collection => $categorySlug === 'requests'
                 ? $this->routeStatsQuery->execute($project)
+                : collect(),
+            'queryStats'      => fn (): \Illuminate\Support\Collection => $categorySlug === 'queries'
+                ? $this->queryStatsQuery->execute($project)
                 : collect(),
             'exceptionGroups' => fn (): \Illuminate\Support\Collection => $categorySlug === 'exceptions'
                 ? $this->exceptionGroupsQuery->execute($project)

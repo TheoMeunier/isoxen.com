@@ -100,6 +100,20 @@ export type RouteStat = {
     p95_ms: number;
 };
 /**
+ * One row of the Queries page's grouped table -- every SQL statement seen
+ * in the window collapsed into one row by its exact text (see
+ * QueryStatsQuery), so a busy or slow query surfaces on its own instead of
+ * being buried in a stream of thousands of individual query spans.
+ */
+export type QueryStat = {
+    query: string;
+    system: string | null;
+    calls: number;
+    total_ms: number;
+    avg_ms: number;
+    p95_ms: number;
+};
+/**
  * One row of the Exceptions page's grouped list -- every occurrence of "the
  * same exception" (see ExceptionFingerprint) collapsed into one row, ranked
  * by last seen so a recurring failure doesn't get buried under whichever

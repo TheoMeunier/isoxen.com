@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/organisms/empty-state';
 import { ExceptionsTable } from '@/components/organisms/exceptions-table';
 import { LogsTable } from '@/components/organisms/logs-table';
 import { MetricsTable } from '@/components/organisms/metrics-table';
+import { QueriesTable } from '@/components/organisms/queries-table';
 import { RoutesTable } from '@/components/organisms/routes-table';
 import { SpansTable } from '@/components/organisms/spans-table';
 import { StatChartPanel } from '@/components/organisms/stat-chart-panel';
@@ -21,6 +22,7 @@ import type {
     MetricEntry,
     ObservabilityCategory,
     Paginated,
+    QueryStat,
     RouteStat,
     SpanEntry,
     StatusSegment,
@@ -38,6 +40,7 @@ type ActivityCategory = Exclude<ObservabilityCategory, 'users'>;
 const LOGS_CATEGORY: ActivityCategory = 'logs';
 const METRICS_CATEGORY: ActivityCategory = 'metrics';
 const REQUESTS_CATEGORY: ActivityCategory = 'requests';
+const QUERIES_CATEGORY: ActivityCategory = 'queries';
 const EXCEPTIONS_CATEGORY: ActivityCategory = 'exceptions';
 
 const CATEGORY_LABELS: Record<ActivityCategory, string> = {
@@ -68,6 +71,7 @@ export default function ProjectsShowActivity({
     statusBreakdown,
     statusTimeline,
     routes,
+    queryStats,
     exceptionGroups,
 }: {
     project: Project;
@@ -79,6 +83,7 @@ export default function ProjectsShowActivity({
     statusBreakdown: StatusSegment[];
     statusTimeline: StatusTimelinePoint[];
     routes: RouteStat[];
+    queryStats: QueryStat[];
     exceptionGroups: ExceptionGroup[];
 }) {
     const [search, setSearch] = useState('');
@@ -178,6 +183,8 @@ export default function ProjectsShowActivity({
 
                 {activeCategory === REQUESTS_CATEGORY ? (
                     <RoutesTable routes={routes} />
+                ) : activeCategory === QUERIES_CATEGORY ? (
+                    <QueriesTable queries={queryStats} />
                 ) : activeCategory === EXCEPTIONS_CATEGORY ? (
                     <ExceptionsTable
                         projectId={project.id}
