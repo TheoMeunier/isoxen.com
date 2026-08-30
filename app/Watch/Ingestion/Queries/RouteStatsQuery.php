@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Watch\Ingestion\Queries;
 
 use App\Watch\Ingestion\Models\OtelSpan;
+use App\Watch\Ingestion\Support\RouteFingerprint;
+use App\Watch\Ingestion\Support\RouteName;
 use App\Watch\Projects\Models\Project;
 use Illuminate\Support\Collection;
 
@@ -18,15 +20,7 @@ use Illuminate\Support\Collection;
 class RouteStatsQuery
 {
     /**
-     * Fixed verb ordering so "GET|HEAD" always reads in this order rather
-     * than drifting with whichever method the window happened to see first.
-     *
-     * @var list<string>
-     */
-    private const array METHOD_ORDER = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
-
-    /**
-     * @return Collection<int, object{methods: string, path: string, total: int, success: int, client_error: int, server_error: int, avg_ms: float, p95_ms: float}>
+     * @return Collection<int, object{methods: string, path: string, fingerprint: string, total: int, success: int, client_error: int, server_error: int, avg_ms: float, p95_ms: float}>
      */
     public function execute(Project $project, int $hours = 24): Collection
     {
@@ -45,7 +39,7 @@ class RouteStatsQuery
             ->orderBy('id')
             ->chunk(500, function ($rows) use (&$routes): void {
                 foreach ($rows as $row) {
-                    [$method, $path] = $this->splitName((string) $row->name);
+                    [$method, $path] = RouteName::split((string) $row->name);
 
                     if ($path === null) {
                         continue;
@@ -84,8 +78,9 @@ class RouteStatsQuery
                 $total = count($durations);
 
                 return (object) [
-                    'methods'      => $this->formatMethods(array_keys($route['methods'])),
+                    'methods'      => RouteName::formatMethods(array_keys($route['methods'])),
                     'path'         => $path,
+                    'fingerprint'  => RouteFingerprint::make($path),
                     'total'        => $total,
                     'success'      => $route['success'],
                     'client_error' => $route['client_error'],
@@ -96,41 +91,6 @@ class RouteStatsQuery
             })
             ->sortByDesc('total')
             ->values();
-    }
-
-    /**
-     * @return array{0: string|null, 1: string|null}
-     */
-    private function splitName(string $name): array
-    {
-        $spaceIndex = strpos($name, ' ');
-
-        if ($spaceIndex === false) {
-            return [null, $name === '' ? null : $name];
-        }
-
-        return [substr($name, 0, $spaceIndex), substr($name, $spaceIndex + 1)];
-    }
-
-    /**
-     * @param  list<string>  $methods
-     */
-    private function formatMethods(array $methods): string
-    {
-        if ($methods === []) {
-            return '—';
-        }
-
-        usort($methods, fn (string $a, string $b): int => $this->methodRank($a) <=> $this->methodRank($b));
-
-        return implode('|', $methods);
-    }
-
-    private function methodRank(string $method): int
-    {
-        $index = array_search($method, self::METHOD_ORDER, true);
-
-        return $index === false ? count(self::METHOD_ORDER) : $index;
     }
 
     /**

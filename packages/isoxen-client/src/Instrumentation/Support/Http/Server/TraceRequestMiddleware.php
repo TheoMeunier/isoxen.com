@@ -18,6 +18,7 @@ use OpenTelemetry\API\Trace\SpanInterface;
 use OpenTelemetry\API\Trace\SpanKind;
 use OpenTelemetry\API\Trace\StatusCode;
 use OpenTelemetry\SemConv\Attributes\ClientAttributes;
+use OpenTelemetry\SemConv\Attributes\CodeAttributes;
 use OpenTelemetry\SemConv\Attributes\ErrorAttributes;
 use OpenTelemetry\SemConv\Attributes\HttpAttributes;
 use OpenTelemetry\SemConv\Attributes\NetworkAttributes;
@@ -116,6 +117,8 @@ class TraceRequestMiddleware
 
         $fullUrl = $redactedQueryString === '' ? $request->url() : sprintf('%s?%s', $request->url(), $redactedQueryString);
 
+        $route = $request->route();
+
         $span
             ->setAttribute(UrlAttributes::URL_FULL, $fullUrl)
             ->setAttribute(UrlAttributes::URL_PATH, $request->path() === '/' ? $request->path() : '/'.$request->path())
@@ -123,7 +126,9 @@ class TraceRequestMiddleware
             ->setAttribute(UserAgentAttributes::USER_AGENT_ORIGINAL, $request->userAgent())
             ->setAttribute(HttpIncubatingAttributes::HTTP_REQUEST_BODY_SIZE, $request->header('Content-Length'))
             ->setAttribute(NetworkAttributes::NETWORK_PEER_ADDRESS, $request->server('REMOTE_ADDR'))
-            ->setAttribute(ClientAttributes::CLIENT_ADDRESS, $request->ip());
+            ->setAttribute(ClientAttributes::CLIENT_ADDRESS, $request->ip())
+            ->setAttribute('isoxen.route.name', $route?->getName())
+            ->setAttribute(CodeAttributes::CODE_FUNCTION_NAME, $this->resolveControllerAction($route));
 
         if (config('isoxen.user_context') === true && $request->user() !== null) {
             $span->setAttributes(OpenTelemetry::collectUserContext($request->user()));
@@ -231,5 +236,24 @@ class TraceRequestMiddleware
         $route = rescue(fn () => Route::getRoutes()->match($request)->uri(), rescue: false);
 
         return $route !== null ? '/'.ltrim($route, '/') : null;
+    }
+
+    /**
+     * "ProjectController@show" -> "ProjectController::show", matching the
+     * "Class::method" shape CODE_FUNCTION_NAME's own docblock uses for PHP
+     * (see QueryInstrumentation::callerAttributes for the same attribute
+     * used on query spans). A route with no controller -- a Closure, or
+     * unresolved because the response came from outside routing entirely --
+     * has nothing meaningful to report here.
+     */
+    protected function resolveControllerAction(?\Illuminate\Routing\Route $route): ?string
+    {
+        if ($route === null) {
+            return null;
+        }
+
+        $action = $route->getActionName();
+
+        return $action === 'Closure' ? null : str_replace('@', '::', $action);
     }
 }

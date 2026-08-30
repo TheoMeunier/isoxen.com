@@ -187,7 +187,7 @@ export default function ProjectsShowActivity({
                 </div>
 
                 {activeCategory === REQUESTS_CATEGORY ? (
-                    <RoutesTable routes={routes} />
+                    <RoutesTable projectId={project.id} routes={routes} />
                 ) : activeCategory === QUERIES_CATEGORY ? (
                     <QueriesTable projectId={project.id} queries={queryStats} />
                 ) : activeCategory === EXCEPTIONS_CATEGORY ? (

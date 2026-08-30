@@ -93,12 +93,61 @@ export type StatusTimelinePoint = {
 export type RouteStat = {
     methods: string;
     path: string;
+    fingerprint: string;
     total: number;
     success: number;
     client_error: number;
     server_error: number;
     avg_ms: number;
     p95_ms: number;
+};
+/**
+ * One hour of a route's traffic -- volume by status class plus duration
+ * stats, the same shape RouteStatsQuery's totals use, so the detail page's
+ * charts read like a zoomed-in version of the Routes table row (see
+ * RouteOccurrencesQuery).
+ */
+export type RouteTimelinePoint = {
+    at: string;
+    total: number;
+    success: number;
+    client_error: number;
+    server_error: number;
+    avg_ms: number | null;
+    p95_ms: number | null;
+};
+export type RouteOccurrence = {
+    time: string;
+    method: string | null;
+    status_code: number | null;
+    duration_ms: number;
+    url: string | null;
+    client_address: string | null;
+    trace_id: string | null;
+    span_id: string | null;
+};
+/**
+ * One route's full detail, addressed by fingerprint (see
+ * RouteOccurrencesQuery) -- shared by the Routes table's drawer and its
+ * dedicated detail page, since both show the same picture at two different
+ * sizes.
+ */
+export type RouteDetail = {
+    path: string;
+    fingerprint: string;
+    methods: string;
+    route_name: string | null;
+    action: string | null;
+    total: number;
+    success: number;
+    client_error: number;
+    server_error: number;
+    avg_ms: number;
+    p95_ms: number;
+    first_seen: string | null;
+    last_seen: string | null;
+    timeline: RouteTimelinePoint[];
+    occurrences: RouteOccurrence[];
 };
 /**
  * One row of the Queries page's grouped table -- every SQL statement seen

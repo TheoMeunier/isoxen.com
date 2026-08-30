@@ -10,6 +10,7 @@ use App\Watch\Projects\Controllers\ListProjectsController;
 use App\Watch\Projects\Controllers\ShowExceptionController;
 use App\Watch\Projects\Controllers\ShowProjectController;
 use App\Watch\Projects\Controllers\ShowQueryController;
+use App\Watch\Projects\Controllers\ShowRouteController;
 use App\Watch\Projects\Controllers\ShowTraceController;
 use Illuminate\Support\Facades\Route;
 
@@ -53,4 +54,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('projects/{project}/queries/{fingerprint}', [ShowQueryController::class, 'render'])
         ->where('fingerprint', '[0-9a-f]{64}')
         ->name('projects.queries.show');
+
+    // Fingerprints are sha256 hex (see RouteFingerprint), same shape as the
+    // exceptions/queries routes above. Also serves the Routes table's
+    // drawer as JSON -- see ShowRouteController.
+    Route::get('projects/{project}/requests/{fingerprint}', [ShowRouteController::class, 'render'])
+        ->where('fingerprint', '[0-9a-f]{64}')
+        ->name('projects.requests.show');
 });

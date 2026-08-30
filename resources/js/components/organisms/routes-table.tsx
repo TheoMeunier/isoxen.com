@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import {
     ArrowDown,
     ArrowUp,
@@ -5,17 +6,27 @@ import {
     Check,
     Copy,
     Globe,
+    PanelRight,
     Search,
     TriangleAlert,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import type { MouseEvent } from 'react';
 import { MethodBadge } from '@/components/molecules/method-badge';
 import { EmptyState } from '@/components/organisms/empty-state';
+import { RouteDetailContent } from '@/components/organisms/route-detail';
 import { Input } from '@/components/ui/input';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import { formatDurationMs } from '@/lib/datetime';
-import type { RouteStat } from '@/types/observability';
+import { show as showRoute } from '@/routes/projects/requests';
+import type { RouteDetail, RouteStat } from '@/types/observability';
 
-type SortKey = Exclude<keyof RouteStat, 'methods' | 'path'>;
+type SortKey = Exclude<keyof RouteStat, 'methods' | 'path' | 'fingerprint'>;
 
 const COLUMNS: { key: SortKey; label: string }[] = [
     { key: 'success', label: '1/2/3XX' },
@@ -32,12 +43,28 @@ const COLUMNS: { key: SortKey; label: string }[] = [
  * percentiles -- this replaces the raw entries list for this one category,
  * since a stream of individual requests is far less useful here than "which
  * routes are hot and which are erroring" (see RouteStatsQuery).
+ *
+ * A row click navigates to that route's full detail page; the drawer
+ * button fetches the same data as JSON (see ShowRouteController) and shows
+ * it in a side panel instead, for a look without leaving the table --
+ * mirrors QueriesTable.
  */
-export function RoutesTable({ routes }: { routes: RouteStat[] }) {
+export function RoutesTable({
+    projectId,
+    routes,
+}: {
+    projectId: number;
+    routes: RouteStat[];
+}) {
     const [search, setSearch] = useState('');
     const [sortKey, setSortKey] = useState<SortKey>('total');
     const [sortDesc, setSortDesc] = useState(true);
     const [copiedPath, setCopiedPath] = useState<string | null>(null);
+    const [drawerFingerprint, setDrawerFingerprint] = useState<string | null>(
+        null,
+    );
+    const [drawerDetail, setDrawerDetail] = useState<RouteDetail | null>(null);
+    const [drawerLoading, setDrawerLoading] = useState(false);
 
     const filtered = useMemo(
         () =>
@@ -64,7 +91,9 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
         }
     }
 
-    async function copyPath(path: string) {
+    async function copyPath(event: MouseEvent, path: string) {
+        event.stopPropagation();
+
         try {
             await navigator.clipboard.writeText(path);
             setCopiedPath(path);
@@ -78,6 +107,30 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
         } catch {
             // Clipboard access can be denied by the browser -- nothing useful to
             // recover to here, so the icon just doesn't flip to a checkmark.
+        }
+    }
+
+    function openRow(fingerprint: string) {
+        router.visit(showRoute({ project: projectId, fingerprint }).url);
+    }
+
+    async function openDrawer(event: MouseEvent, fingerprint: string) {
+        event.stopPropagation();
+        setDrawerFingerprint(fingerprint);
+        setDrawerDetail(null);
+        setDrawerLoading(true);
+
+        try {
+            const response = await fetch(
+                showRoute({ project: projectId, fingerprint }).url,
+                { headers: { Accept: 'application/json' } },
+            );
+
+            if (response.ok) {
+                setDrawerDetail((await response.json()) as RouteDetail);
+            }
+        } finally {
+            setDrawerLoading(false);
         }
     }
 
@@ -151,8 +204,11 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                             <tbody>
                                 {sorted.map((route) => (
                                     <tr
-                                        key={route.path}
-                                        className="border-b border-sidebar-border/40 last:border-0 dark:border-sidebar-border/60"
+                                        key={route.fingerprint}
+                                        onClick={() =>
+                                            openRow(route.fingerprint)
+                                        }
+                                        className="cursor-pointer border-b border-sidebar-border/40 last:border-0 hover:bg-accent/50 dark:border-sidebar-border/60"
                                     >
                                         <td className="py-2 pr-4 whitespace-nowrap">
                                             <div className="flex flex-wrap gap-1">
@@ -214,20 +270,36 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                                             {formatDurationMs(route.p95_ms)}
                                         </td>
                                         <td className="py-2 pl-2">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    copyPath(route.path)
-                                                }
-                                                title="Copy path"
-                                                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                                            >
-                                                {copiedPath === route.path ? (
-                                                    <Check className="size-3.5" />
-                                                ) : (
-                                                    <Copy className="size-3.5" />
-                                                )}
-                                            </button>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) =>
+                                                        copyPath(e, route.path)
+                                                    }
+                                                    title="Copy path"
+                                                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                >
+                                                    {copiedPath ===
+                                                    route.path ? (
+                                                        <Check className="size-3.5" />
+                                                    ) : (
+                                                        <Copy className="size-3.5" />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) =>
+                                                        openDrawer(
+                                                            e,
+                                                            route.fingerprint,
+                                                        )
+                                                    }
+                                                    title="Open details"
+                                                    className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                                >
+                                                    <PanelRight className="size-3.5" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -236,6 +308,36 @@ export function RoutesTable({ routes }: { routes: RouteStat[] }) {
                     </div>
                 )}
             </div>
+
+            <Sheet
+                open={drawerFingerprint !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDrawerFingerprint(null);
+                        setDrawerDetail(null);
+                    }
+                }}
+            >
+                <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-2xl">
+                    <SheetHeader>
+                        <SheetTitle>Request details</SheetTitle>
+                    </SheetHeader>
+
+                    <div className="px-4 pb-4">
+                        {drawerLoading || !drawerDetail ? (
+                            <p className="py-8 text-center text-sm text-muted-foreground">
+                                Loading…
+                            </p>
+                        ) : (
+                            <RouteDetailContent
+                                projectId={projectId}
+                                detail={drawerDetail}
+                                chartLayout="stacked"
+                            />
+                        )}
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div>
     );
 }

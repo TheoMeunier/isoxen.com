@@ -97,6 +97,7 @@
     --sidebar-ring: oklch(0.87 0 0);
 
     --color-tone-neutral: #2a78d6;
+    --color-tone-success: #1a9d5c;
     --color-tone-warning: #eda100;
     --color-tone-warning-contrast: #c98500;
     --color-tone-critical: #c33c3c;
@@ -151,6 +152,7 @@
     --sidebar-ring: oklch(0.439 0 0);
 
     --color-tone-neutral: #3987e5;
+    --color-tone-success: #22a878;
     --color-tone-warning: #c98500;
     --color-tone-warning-contrast: #eda100;
     --color-tone-critical: #e66767;
