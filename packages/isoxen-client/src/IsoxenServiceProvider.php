@@ -90,6 +90,8 @@ class IsoxenServiceProvider extends PackageServiceProvider
         'notifications'     => Instrumentation\NotificationInstrumentation::class,
         'users'             => Instrumentation\UserInstrumentation::class,
         'logs'              => Instrumentation\LogInstrumentation::class,
+        'models'            => Instrumentation\ModelInstrumentation::class,
+        'storage'           => Instrumentation\StorageInstrumentation::class,
     ];
 
     public function packageRegistered(): void

@@ -11,6 +11,7 @@ use Isoxen\Client\Facades\OpenTelemetry;
 use Isoxen\Client\Facades\Tracer;
 use Isoxen\Client\Instrumentation\HttpServerInstrumentation;
 use Isoxen\Client\SpanType;
+use Isoxen\Client\Support\RequestActivityCounters;
 use Isoxen\Client\Support\Suppression;
 use OpenTelemetry\API\Common\Time\Clock;
 use OpenTelemetry\API\Common\Time\ClockInterface;
@@ -45,6 +46,8 @@ class TraceRequestMiddleware
         }
 
         Suppression::unseal();
+
+        RequestActivityCounters::reset();
 
         if (in_array($request->method(), HttpServerInstrumentation::getExcludedMethods(), true)) {
             return $next($request);
@@ -128,7 +131,11 @@ class TraceRequestMiddleware
             ->setAttribute(NetworkAttributes::NETWORK_PEER_ADDRESS, $request->server('REMOTE_ADDR'))
             ->setAttribute(ClientAttributes::CLIENT_ADDRESS, $request->ip())
             ->setAttribute('isoxen.route.name', $route?->getName())
-            ->setAttribute(CodeAttributes::CODE_FUNCTION_NAME, $this->resolveControllerAction($route));
+            ->setAttribute(CodeAttributes::CODE_FUNCTION_NAME, $this->resolveControllerAction($route))
+            ->setAttribute('isoxen.request.peak_memory', memory_get_peak_usage(true))
+            ->setAttribute('isoxen.request.hydrated_models', RequestActivityCounters::get('hydrated_models'))
+            ->setAttribute('isoxen.request.storage_reads', RequestActivityCounters::get('storage_reads'))
+            ->setAttribute('isoxen.request.storage_writes', RequestActivityCounters::get('storage_writes'));
 
         if (config('isoxen.user_context') === true && $request->user() !== null) {
             $span->setAttributes(OpenTelemetry::collectUserContext($request->user()));

@@ -294,6 +294,18 @@ return [
         'users' => env('ISOXEN_SENSOR_USERS', true),
 
         'logs' => env('ISOXEN_SENSOR_LOGS', true),
+
+        // Counts Eloquent model hydrations per request via the native
+        // Model::retrieved() event. Read-only and cheap, so on by default.
+        'models' => env('ISOXEN_SENSOR_MODELS', true),
+
+        // Counts filesystem reads/writes per request by wrapping the
+        // `filesystem` container binding (see StorageInstrumentation).
+        // Off by default: unlike every other sensor here, this one sits on
+        // the same interface the application itself uses to read and write
+        // files. Turn it on once you've verified it against your own disks
+        // and drivers.
+        'storage' => env('ISOXEN_SENSOR_STORAGE', false),
     ],
 
     /*

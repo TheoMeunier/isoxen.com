@@ -16,8 +16,9 @@ use Illuminate\Support\Facades\Date;
  * groups the Requests page's Routes table by (see RouteFingerprint): every
  * hit within the window -- so the drawer/detail page can show traffic and
  * status-class volume over time, duration stats, and the most recent
- * individual requests -- without a dedicated per-route table, the same
- * one-scan-per-view tradeoff QueryOccurrencesQuery and
+ * individual requests, each annotated with what it triggered downstream
+ * (see RouteRequestActivityQuery) -- without a dedicated per-route table,
+ * the same one-scan-per-view tradeoff QueryOccurrencesQuery and
  * ExceptionOccurrencesQuery already make.
  */
 class RouteOccurrencesQuery
@@ -28,9 +29,15 @@ class RouteOccurrencesQuery
      * a busy route's entire request volume in memory just to show "what
      * happened recently", so this keeps a fixed-size, most-recent-first
      * window instead (totals/duration stats above are unaffected: those
-     * still scan every row in the window, matching RouteStatsQuery).
+     * still scan every row in the window, matching RouteStatsQuery). It
+     * also bounds RouteRequestActivityQuery's own scan below to at most
+     * this many trace ids.
      */
     private const int MAX_OCCURRENCES = 50;
+
+    public function __construct(
+        private readonly RouteRequestActivityQuery $routeRequestActivityQuery,
+    ) {}
 
     /**
      * @return array{
@@ -48,7 +55,30 @@ class RouteOccurrencesQuery
      *     first_seen: string|null,
      *     last_seen: string|null,
      *     timeline: list<array{at: string, total: int, success: int, client_error: int, server_error: int, avg_ms: float|null, p95_ms: float|null}>,
-     *     occurrences: list<array{time: string, method: string|null, status_code: int|null, duration_ms: float, url: string|null, client_address: string|null, trace_id: string|null, span_id: string|null}>,
+     *     occurrences: list<array{
+     *         time: string,
+     *         method: string|null,
+     *         status_code: int|null,
+     *         duration_ms: float,
+     *         url: string|null,
+     *         client_address: string|null,
+     *         request_size: int|null,
+     *         response_size: int|null,
+     *         peak_memory: int|null,
+     *         user: array{id: string|null, name: string|null, email: string|null}|null,
+     *         trace_id: string|null,
+     *         span_id: string|null,
+     *         activity: array{
+     *             queries: array{count: int, total_ms: float},
+     *             outgoing_requests: array{count: int},
+     *             queued_jobs: array{count: int},
+     *             cache: array{hits: int, misses: int, writes: int},
+     *             mail: array{count: int},
+     *             notifications: array{count: int},
+     *         },
+     *         storage: array{reads: int, writes: int},
+     *         hydrated_models: int,
+     *     }>,
      * }|null
      */
     public function execute(Project $project, string $fingerprint, int $hours = 24): ?array
@@ -70,11 +100,11 @@ class RouteOccurrencesQuery
             ];
         }
 
-        $path       = null;
-        $routeName  = null;
-        $action     = null;
-        $firstSeen  = null;
-        $lastSeen   = null;
+        $path      = null;
+        $routeName = null;
+        $action    = null;
+        $firstSeen = null;
+        $lastSeen  = null;
 
         /** @var array<string, true> $methods */
         $methods = [];
@@ -86,7 +116,7 @@ class RouteOccurrencesQuery
         /** @var list<int> $durations */
         $durations = [];
 
-        /** @var list<array{time: Carbon, method: string|null, status_code: int|null, duration_ms: float, url: string|null, client_address: string|null, trace_id: string|null, span_id: string|null}> $occurrences */
+        /** @var list<array{time: Carbon, method: string|null, status_code: int|null, duration_ms: float, url: string|null, client_address: string|null, request_size: int|null, response_size: int|null, peak_memory: int|null, user: array{id: string|null, name: string|null, email: string|null}|null, trace_id: string|null, span_id: string|null, storage: array{reads: int, writes: int}, hydrated_models: int}> $occurrences */
         $occurrences = [];
 
         OtelSpan::query()->toBase()
@@ -175,6 +205,14 @@ class RouteOccurrencesQuery
                     $url           = $attributes['url.full']       ?? null;
                     $clientAddress = $attributes['client.address'] ?? null;
 
+                    $requestSize  = $attributes['http.request.body.size']  ?? null;
+                    $responseSize = $attributes['http.response.body.size'] ?? null;
+                    $peakMemory   = $attributes['isoxen.request.peak_memory'] ?? null;
+
+                    $storageReads  = $attributes['isoxen.request.storage_reads']  ?? null;
+                    $storageWrites = $attributes['isoxen.request.storage_writes'] ?? null;
+                    $hydratedModels = $attributes['isoxen.request.hydrated_models'] ?? null;
+
                     $occurrences[] = [
                         'time'           => $time,
                         'method'         => $method,
@@ -182,8 +220,17 @@ class RouteOccurrencesQuery
                         'duration_ms'    => round($durationNs / 1_000_000, 2),
                         'url'            => is_string($url) && $url !== '' ? $url : null,
                         'client_address' => is_string($clientAddress) && $clientAddress !== '' ? $clientAddress : null,
+                        'request_size'   => is_numeric($requestSize) ? (int) $requestSize : null,
+                        'response_size'  => is_numeric($responseSize) ? (int) $responseSize : null,
+                        'peak_memory'    => is_numeric($peakMemory) ? (int) $peakMemory : null,
+                        'user'           => $this->extractUser($attributes),
                         'trace_id'       => is_string($row->trace_id) ? $row->trace_id : null,
                         'span_id'        => is_string($row->span_id) ? $row->span_id : null,
+                        'storage'        => [
+                            'reads'  => is_numeric($storageReads) ? (int) $storageReads : 0,
+                            'writes' => is_numeric($storageWrites) ? (int) $storageWrites : 0,
+                        ],
+                        'hydrated_models' => is_numeric($hydratedModels) ? (int) $hydratedModels : 0,
                     ];
 
                     // The scan visits rows oldest-first, so trimming from the
@@ -204,6 +251,17 @@ class RouteOccurrencesQuery
         sort($durations);
         $total      = count($durations);
         $totalNanos = array_sum($durations);
+
+        $traceIds = array_values(array_unique(array_filter(array_column($occurrences, 'trace_id'))));
+        $activity = $this->routeRequestActivityQuery->execute($project, $traceIds);
+        $noActivity = [
+            'queries'           => ['count' => 0, 'total_ms' => 0.0],
+            'outgoing_requests' => ['count' => 0],
+            'queued_jobs'       => ['count' => 0],
+            'cache'             => ['hits' => 0, 'misses' => 0, 'writes' => 0],
+            'mail'              => ['count' => 0],
+            'notifications'     => ['count' => 0],
+        ];
 
         return [
             'path'         => $path,
@@ -234,16 +292,53 @@ class RouteOccurrencesQuery
                 ];
             }, $buckets)),
             'occurrences' => array_map(fn (array $occurrence): array => [
-                'time'           => $occurrence['time']->toIso8601String(),
-                'method'         => $occurrence['method'],
-                'status_code'    => $occurrence['status_code'],
-                'duration_ms'    => $occurrence['duration_ms'],
-                'url'            => $occurrence['url'],
-                'client_address' => $occurrence['client_address'],
-                'trace_id'       => $occurrence['trace_id'],
-                'span_id'        => $occurrence['span_id'],
+                'time'            => $occurrence['time']->toIso8601String(),
+                'method'          => $occurrence['method'],
+                'status_code'     => $occurrence['status_code'],
+                'duration_ms'     => $occurrence['duration_ms'],
+                'url'             => $occurrence['url'],
+                'client_address'  => $occurrence['client_address'],
+                'request_size'    => $occurrence['request_size'],
+                'response_size'   => $occurrence['response_size'],
+                'peak_memory'     => $occurrence['peak_memory'],
+                'user'            => $occurrence['user'],
+                'trace_id'        => $occurrence['trace_id'],
+                'span_id'         => $occurrence['span_id'],
+                'activity'        => $occurrence['trace_id'] !== null
+                    ? ($activity[$occurrence['trace_id']] ?? $noActivity)
+                    : $noActivity,
+                'storage'         => $occurrence['storage'],
+                'hydrated_models' => $occurrence['hydrated_models'],
             ], array_reverse($occurrences)),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array{id: string|null, name: string|null, email: string|null}|null
+     */
+    private function extractUser(array $attributes): ?array
+    {
+        // `user.id` is what UserContextResolver's default collector sets
+        // (see collectUserContext); `enduser.id` is the login/logout
+        // sensor's own attribute (see UserInstrumentation). name/email
+        // only ever appear if the app registered a custom resolver via
+        // OpenTelemetry::user() -- absent otherwise, same as Nightwatch's
+        // own default.
+        $id = $attributes['user.id'] ?? $attributes['enduser.id'] ?? null;
+        $id = is_string($id) || is_numeric($id) ? (string) $id : null;
+
+        $name = $attributes['user.name'] ?? null;
+        $name = is_string($name) && $name !== '' ? $name : null;
+
+        $email = $attributes['user.email'] ?? null;
+        $email = is_string($email) && $email !== '' ? $email : null;
+
+        if ($id === null && $name === null && $email === null) {
+            return null;
+        }
+
+        return ['id' => $id, 'name' => $name, 'email' => $email];
     }
 
     /**

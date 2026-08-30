@@ -116,6 +116,28 @@ export type RouteTimelinePoint = {
     avg_ms: number | null;
     p95_ms: number | null;
 };
+export type RouteOccurrenceUser = {
+    id: string | null;
+    name: string | null;
+    email: string | null;
+};
+/**
+ * What one request triggered downstream, read back from the child spans
+ * that share its trace id (see RouteRequestActivityQuery) -- the same
+ * breakdown Nightwatch's own request page shows (see RequestActivityPanel).
+ */
+export type RouteOccurrenceActivity = {
+    queries: { count: number; total_ms: number };
+    outgoing_requests: { count: number };
+    queued_jobs: { count: number };
+    cache: { hits: number; misses: number; writes: number };
+    mail: { count: number };
+    notifications: { count: number };
+};
+export type RouteOccurrenceStorage = {
+    reads: number;
+    writes: number;
+};
 export type RouteOccurrence = {
     time: string;
     method: string | null;
@@ -123,8 +145,15 @@ export type RouteOccurrence = {
     duration_ms: number;
     url: string | null;
     client_address: string | null;
+    request_size: number | null;
+    response_size: number | null;
+    peak_memory: number | null;
+    user: RouteOccurrenceUser | null;
     trace_id: string | null;
     span_id: string | null;
+    activity: RouteOccurrenceActivity;
+    storage: RouteOccurrenceStorage;
+    hydrated_models: number;
 };
 /**
  * One route's full detail, addressed by fingerprint (see
@@ -148,6 +177,37 @@ export type RouteDetail = {
     last_seen: string | null;
     timeline: RouteTimelinePoint[];
     occurrences: RouteOccurrence[];
+};
+/**
+ * One request's full detail, addressed either as "the project's most
+ * recent request" or as one specific row out of a route's own "Recent
+ * requests" list (see RequestOccurrenceQuery's latest()/find()) --
+ * everything RouteOccurrence carries for one occurrence, plus enough route
+ * context (path/fingerprint/route_name/action) to show which route it
+ * belongs to and link back to that route's own page. `null` fields on the
+ * route context mean the span's name didn't parse into a "METHOD path"
+ * pair; the occurrence fields themselves are still shown either way.
+ */
+export type RequestOccurrenceDetail = {
+    path: string | null;
+    fingerprint: string | null;
+    route_name: string | null;
+    action: string | null;
+    time: string;
+    method: string | null;
+    status_code: number | null;
+    duration_ms: number;
+    url: string | null;
+    client_address: string | null;
+    request_size: number | null;
+    response_size: number | null;
+    peak_memory: number | null;
+    user: RouteOccurrenceUser | null;
+    trace_id: string | null;
+    span_id: string | null;
+    activity: RouteOccurrenceActivity;
+    storage: RouteOccurrenceStorage;
+    hydrated_models: number;
 };
 /**
  * One row of the Queries page's grouped table -- every SQL statement seen

@@ -1,6 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
-import Heading from '@/components/heading';
 import { RouteDetailContent } from '@/components/organisms/route-detail';
 import { index, show } from '@/routes/projects';
 import type { RouteDetail } from '@/types/observability';
@@ -31,11 +30,6 @@ export default function ProjectsShowRoute({
                     <ArrowLeft className="size-3.5" />
                     Back to {project.name}
                 </Link>
-
-                <Heading
-                    title="Request"
-                    description={`${route.total.toLocaleString()} requests in the last 24h`}
-                />
 
                 <RouteDetailContent
                     projectId={project.id}
