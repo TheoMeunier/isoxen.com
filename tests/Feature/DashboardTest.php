@@ -22,7 +22,7 @@ function insertDashboardRequestSpan(int $projectId, int $httpStatus): void
     ]);
 }
 
-function insertDashboardExceptionSpan(int $projectId, string $name, \Carbon\CarbonInterface $time, ?string $statusMessage = null): void
+function insertDashboardExceptionSpan(int $projectId, string $name, Carbon\CarbonInterface $time, ?string $statusMessage = null): void
 {
     DB::table('otel_spans')->insert([
         'project_id'     => $projectId,

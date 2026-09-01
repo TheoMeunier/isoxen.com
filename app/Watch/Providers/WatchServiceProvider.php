@@ -6,6 +6,7 @@ namespace App\Watch\Providers;
 
 use App\Auth\Models\User;
 use App\Watch\Ingestion\Console\IngestionStatusCommand;
+use App\Watch\Ingestion\Console\PruneTelemetryCommand;
 use App\Watch\Projects\Models\Project;
 use App\Watch\Projects\Policies\ProjectPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -36,7 +37,7 @@ class WatchServiceProvider extends ServiceProvider
         ]);
 
         if ($this->app->runningInConsole()) {
-            $this->commands([IngestionStatusCommand::class]);
+            $this->commands([IngestionStatusCommand::class, PruneTelemetryCommand::class]);
         }
     }
 }

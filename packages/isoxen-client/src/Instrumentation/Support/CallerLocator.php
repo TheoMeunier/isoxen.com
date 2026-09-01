@@ -49,9 +49,9 @@ final class CallerLocator
 
             return [
                 'file'     => $file,
-                'line'     => $frame['line'] ?? 0,
-                'class'    => $enclosing['class']    ?? null,
-                'function' => $enclosing['function'] ?? null,
+                'line'     => $frame['line']          ?? 0,
+                'class'    => $enclosing['class']     ?? null,
+                'function' => $enclosing['function']  ?? null,
                 'type'     => $enclosing['type']      ?? null,
             ];
         }

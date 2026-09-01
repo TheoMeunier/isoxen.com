@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Watch\Projects\Requests;
 
+use App\Watch\Projects\Models\Project;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProjectRequest extends FormRequest
 {
@@ -17,7 +19,8 @@ class UpdateProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name'           => ['required', 'string', 'max:255'],
+            'retention_days' => ['sometimes', 'integer', Rule::in(Project::RETENTION_CHOICES)],
         ];
     }
 }

@@ -159,7 +159,7 @@ class QueryOccurrencesQuery
                         'duration_ms' => round($durationNs / 1_000_000, 2),
                         'trace_id'    => is_string($row->trace_id) ? $row->trace_id : null,
                         'span_id'     => is_string($row->span_id) ? $row->span_id : null,
-                        'caller'      => is_string($caller) && $caller !== '' ? $caller : null,
+                        'caller'      => is_string($caller)     && $caller         !== '' ? $caller : null,
                         'caller_file' => is_string($callerFile) && $callerFile !== '' ? $callerFile : null,
                         'caller_line' => is_numeric($callerLine) ? (int) $callerLine : null,
                     ];
@@ -174,7 +174,7 @@ class QueryOccurrencesQuery
                 }
             });
 
-        if ($text === null || $firstSeen === null || $lastSeen === null) {
+        if ($text === null || !$firstSeen instanceof \Illuminate\Support\Carbon || !$lastSeen instanceof \Illuminate\Support\Carbon) {
             return null;
         }
 

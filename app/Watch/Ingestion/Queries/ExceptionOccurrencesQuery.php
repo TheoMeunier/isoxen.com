@@ -120,7 +120,7 @@ class ExceptionOccurrencesQuery
                 }
             });
 
-        if ($firstSeen === null || $lastSeen === null || $type === null) {
+        if (!$firstSeen instanceof \Illuminate\Support\Carbon || !$lastSeen instanceof \Illuminate\Support\Carbon || $type === null) {
             return null;
         }
 

@@ -180,3 +180,31 @@ test('a user cannot delete another user\'s project', function () {
 
     expect(Project::find($project->id))->not->toBeNull();
 });
+
+// --- Retention ---
+
+test('an owner can change the telemetry retention window', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->put(route('projects.update', $project), [
+            'name'           => $project->name,
+            'retention_days' => 7,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($project->fresh()->retention_days)->toBe(7);
+});
+
+test('the retention window must be one of the supported choices', function () {
+    $user    = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+
+    $this->actingAs($user)
+        ->put(route('projects.update', $project), [
+            'name'           => $project->name,
+            'retention_days' => 3,
+        ])
+        ->assertSessionHasErrors('retention_days');
+});
