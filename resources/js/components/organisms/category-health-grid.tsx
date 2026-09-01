@@ -54,8 +54,12 @@ function CategoryHealthTile({
     );
 }
 
-const GROUPS: { label: string; group: 'activity' | 'monitoring' }[] = [
+const GROUPS: {
+    label: string;
+    group: 'activity' | 'messaging' | 'monitoring';
+}[] = [
     { label: 'Activity', group: 'activity' },
+    { label: 'Messaging', group: 'messaging' },
     { label: 'Monitoring', group: 'monitoring' },
 ];
 

@@ -17,7 +17,9 @@ class UpdateProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name'                       => ['required', 'string', 'max:255'],
+            // Empty means "no alerting"; the input submits '' when cleared.
+            'alert_error_rate_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }
