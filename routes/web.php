@@ -20,11 +20,11 @@ require __DIR__.'/projects.php';
 // expected responses, not errors), but a RequestException from a failed
 // HTTP client call is reported normally. Safe to remove once confirmed.
 Route::get('debug/test-exception', function (): void {
-    \Illuminate\Support\Facades\Http::fake([
-        '*' => \Illuminate\Support\Facades\Http::response(['error' => 'Simulated failure'], 503),
+    Illuminate\Support\Facades\Http::fake([
+        '*' => Illuminate\Support\Facades\Http::response(['error' => 'Simulated failure'], 503),
     ]);
 
-    \Illuminate\Support\Facades\Http::get('https://example.test/simulated')->throw();
+    Illuminate\Support\Facades\Http::get('https://example.test/simulated')->throw();
 })->name('debug.test-exception');
 
 // routes/otel.php is deliberately not required here: it's registered in

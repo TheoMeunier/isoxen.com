@@ -23,15 +23,23 @@ use Illuminate\Support\Str;
  * @property string $name
  * @property string $slug
  * @property string $token
+ * @property int $retention_days
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
  */
-#[Fillable(['name'])]
+#[Fillable(['name', 'retention_days'])]
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
+
+    /**
+     * How long telemetry is kept, in days. Enforced by `isoxen:prune-telemetry`.
+     *
+     * @var list<int>
+     */
+    public const array RETENTION_CHOICES = [7, 14, 30, 90];
 
     protected static function newFactory(): ProjectFactory
     {

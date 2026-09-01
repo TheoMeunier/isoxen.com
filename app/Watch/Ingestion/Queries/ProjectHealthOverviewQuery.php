@@ -79,11 +79,11 @@ class ProjectHealthOverviewQuery
     private function errors(Project $project, string $slug, string $model, ?string $type, DateTimeInterface $since, int $hours, int $total): int
     {
         return match (true) {
-            $slug === 'requests' => $this->requestStatusBreakdownQuery->execute($project, $hours)['server_error'],
-            $slug === 'logs' => $this->logSeverityBreakdownQuery->execute($project, $hours)['error'],
-            $slug === 'exceptions' => $total,
+            $slug === 'requests'       => $this->requestStatusBreakdownQuery->execute($project, $hours)['server_error'],
+            $slug === 'logs'           => $this->logSeverityBreakdownQuery->execute($project, $hours)['error'],
+            $slug === 'exceptions'     => $total,
             $model !== OtelSpan::class => 0,
-            default => OtelSpan::query()->toBase()
+            default                    => OtelSpan::query()->toBase()
                 ->where('project_id', $project->id)
                 ->where('time', '>=', $since)
                 ->when($type !== null, fn ($query) => $query->where('type', $type))

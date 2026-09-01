@@ -25,7 +25,7 @@ class ProjectUptimeQuery
     {
         $lastSeen = $this->latestEventAt($project, $hours);
 
-        if ($lastSeen === null) {
+        if (!$lastSeen instanceof \Carbon\CarbonImmutable) {
             return ['online' => false, 'lastSeenAt' => null];
         }
 

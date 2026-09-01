@@ -218,7 +218,7 @@ class RouteOccurrencesQuery
                         'method'         => $method,
                         'status_code'    => $status,
                         'duration_ms'    => round($durationNs / 1_000_000, 2),
-                        'url'            => is_string($url) && $url !== '' ? $url : null,
+                        'url'            => is_string($url)           && $url                     !== '' ? $url : null,
                         'client_address' => is_string($clientAddress) && $clientAddress !== '' ? $clientAddress : null,
                         'request_size'   => is_numeric($requestSize) ? (int) $requestSize : null,
                         'response_size'  => is_numeric($responseSize) ? (int) $responseSize : null,
@@ -244,7 +244,7 @@ class RouteOccurrencesQuery
                 }
             });
 
-        if ($path === null || $firstSeen === null || $lastSeen === null) {
+        if ($path === null || !$firstSeen instanceof \Illuminate\Support\Carbon || !$lastSeen instanceof \Illuminate\Support\Carbon) {
             return null;
         }
 

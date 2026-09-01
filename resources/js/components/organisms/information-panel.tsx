@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+import { Form, router } from '@inertiajs/react';
 import { Check, Copy, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import DeleteProjectController from '@/actions/App/Watch/Projects/Controllers/DeleteProjectController';
@@ -16,8 +16,22 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useClipboard } from '@/hooks/use-clipboard';
 import type { Project } from '@/types/project';
+
+/** Kept in sync with Project::RETENTION_CHOICES. */
+const RETENTION_CHOICES = [7, 14, 30, 90];
+
+/** Matches the column default, for a project stored before retention existed. */
+const DEFAULT_RETENTION = 30;
+
 export function InformationPanel({ project }: { project: Project }) {
     const [copiedText, copy] = useClipboard();
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -87,6 +101,43 @@ export function InformationPanel({ project }: { project: Project }) {
                             </Form>
                         </DialogContent>
                     </Dialog>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-4 border-t border-sidebar-border/70 pt-4 dark:border-sidebar-border">
+                    <div>
+                        <Label htmlFor="retention_days">Data retention</Label>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Traces, logs and metrics older than this are deleted
+                            every night.
+                        </p>
+                    </div>
+
+                    <Select
+                        value={String(
+                            project.retentionDays ?? DEFAULT_RETENTION,
+                        )}
+                        onValueChange={(days) =>
+                            router.put(
+                                EditProjectController.execute.url(project.id),
+                                { name: project.name, retention_days: days },
+                                { preserveScroll: true },
+                            )
+                        }
+                    >
+                        <SelectTrigger id="retention_days" className="w-40">
+                            <SelectValue
+                                placeholder={`${DEFAULT_RETENTION} days`}
+                            />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {RETENTION_CHOICES.map((days) => (
+                                <SelectItem key={days} value={String(days)}>
+                                    {days} days
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 

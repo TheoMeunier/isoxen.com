@@ -64,7 +64,7 @@ class QueryStatsQuery
             ->map(function (array $query, string $text): object {
                 $durations = $query['durations'];
                 sort($durations);
-                $calls = count($durations);
+                $calls      = count($durations);
                 $totalNanos = array_sum($durations);
 
                 return (object) [
