@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Watch\Projects\Controllers;
+namespace App\Watch\Projects\Controllers\Requests;
 
 use App\Core\Controllers\Controller;
 use App\Watch\Ingestion\Queries\RequestOccurrenceQuery;
@@ -16,17 +16,10 @@ class ShowRequestOccurrenceController extends Controller
 {
     public function __construct(
         private readonly RequestOccurrenceQuery $requestOccurrenceQuery,
-    ) {}
+    )
+    {
+    }
 
-    /**
-     * One specific request out of a route's own "Recent requests" list --
-     * clicking a row there lands here instead of expanding the row in
-     * place (see RequestActivityPanel), addressed by the pair that
-     * uniquely identifies a request span: its trace id and its own span id
-     * within that trace (a trace id alone isn't enough -- outgoing
-     * requests and queued jobs the request triggered can carry the same
-     * trace id under a different span).
-     */
     public function render(Project $project, string $trace, string $span): Response
     {
         $this->authorize('view', $project);

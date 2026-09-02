@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Watch\Projects\Controllers;
+namespace App\Watch\Projects\Controllers\Projects;
 
 use App\Core\Controllers\Controller;
 use App\Watch\Projects\Actions\DeleteProjectAction;
@@ -14,7 +14,9 @@ class DeleteProjectController extends Controller
 {
     public function __construct(
         private readonly DeleteProjectAction $deleteProjectAction,
-    ) {}
+    )
+    {
+    }
 
     public function execute(Project $project): RedirectResponse
     {

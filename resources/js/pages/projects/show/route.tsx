@@ -5,12 +5,6 @@ import { index, show } from '@/routes/projects';
 import type { RouteDetail } from '@/types/observability';
 import type { Project } from '@/types/project';
 
-/**
- * A single route's full detail page -- the same content the Routes table's
- * drawer shows (see RouteDetailContent), just as its own page with room to
- * breathe, for whoever wants a link to one specific route instead of a side
- * panel. Mirrors ProjectsShowQuery.
- */
 export default function ProjectsShowRoute({
     project,
     route,

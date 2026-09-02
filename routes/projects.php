@@ -3,15 +3,15 @@
 declare(strict_types=1);
 
 use App\Watch\Ingestion\Support\ObservabilityCategories;
-use App\Watch\Projects\Controllers\CreateProjectController;
-use App\Watch\Projects\Controllers\DeleteProjectController;
-use App\Watch\Projects\Controllers\EditProjectController;
-use App\Watch\Projects\Controllers\ListProjectsController;
-use App\Watch\Projects\Controllers\ShowExceptionController;
+use App\Watch\Projects\Controllers\Exceptions\ShowExceptionController;
+use App\Watch\Projects\Controllers\Projects\CreateProjectController;
+use App\Watch\Projects\Controllers\Projects\DeleteProjectController;
+use App\Watch\Projects\Controllers\Projects\EditProjectController;
+use App\Watch\Projects\Controllers\Projects\ListProjectsController;
+use App\Watch\Projects\Controllers\Query\ShowQueryController;
+use App\Watch\Projects\Controllers\Requests\ShowRequestOccurrenceController;
+use App\Watch\Projects\Controllers\Requests\ShowRouteController;
 use App\Watch\Projects\Controllers\ShowProjectController;
-use App\Watch\Projects\Controllers\ShowQueryController;
-use App\Watch\Projects\Controllers\ShowRequestOccurrenceController;
-use App\Watch\Projects\Controllers\ShowRouteController;
 use App\Watch\Projects\Controllers\ShowTraceController;
 use Illuminate\Support\Facades\Route;
 

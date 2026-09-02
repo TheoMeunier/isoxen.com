@@ -5,14 +5,14 @@ import { CategoryHeader } from '@/components/molecules/category-header';
 import { PagerLinks } from '@/components/molecules/pager-links';
 import { PeriodSelector } from '@/components/molecules/period-selector';
 import { EmptyState } from '@/components/organisms/empty-state';
-import { ExceptionsTable } from '@/components/organisms/exceptions-table';
 import { LogsTable } from '@/components/organisms/logs-table';
 import { MetricsTable } from '@/components/organisms/metrics-table';
-import { QueriesTable } from '@/components/organisms/queries-table';
-import { RoutesTable } from '@/components/organisms/routes-table';
 import { SpansTable } from '@/components/organisms/spans-table';
 import { StatChartPanel } from '@/components/organisms/stat-chart-panel';
 import { Input } from '@/components/ui/input';
+import { ExceptionsTable } from '@/features/projects/exceptions/exceptions-table';
+import { QueriesTable } from '@/features/projects/query/queries-table';
+import { RoutesTable } from '@/features/projects/requests/components/request-table';
 import { index, show } from '@/routes/projects';
 import type {
     CategorySummary,

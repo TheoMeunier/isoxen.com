@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Watch\Projects\Controllers;
+namespace App\Watch\Projects\Controllers\Projects;
 
 use App\Core\Controllers\Controller;
 use App\Watch\Ingestion\Support\ObservabilityCategories;
@@ -16,7 +16,9 @@ class EditProjectController extends Controller
 {
     public function __construct(
         private readonly UpdateProjectAction $updateProjectAction,
-    ) {}
+    )
+    {
+    }
 
     public function execute(UpdateProjectRequest $request, Project $project): RedirectResponse
     {
@@ -27,7 +29,7 @@ class EditProjectController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Project updated.')]);
 
         return to_route('projects.show', [
-            'project'  => $project,
+            'project' => $project,
             'category' => ObservabilityCategories::default(),
         ]);
     }

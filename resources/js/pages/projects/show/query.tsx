@@ -1,7 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import Heading from '@/components/heading';
-import { QueryDetailContent } from '@/components/organisms/query-detail';
+import { QueryDetailContent } from '@/features/projects/query/query-detail';
 import { index, show } from '@/routes/projects';
 import type { QueryDetail } from '@/types/observability';
 import type { Project } from '@/types/project';

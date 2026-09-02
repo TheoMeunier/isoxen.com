@@ -9,10 +9,9 @@ import {
     PanelRight,
     Search,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
 import type { MouseEvent } from 'react';
+import { useMemo, useState } from 'react';
 import { EmptyState } from '@/components/organisms/empty-state';
-import { QueryDetailContent } from '@/components/organisms/query-detail';
 import { Input } from '@/components/ui/input';
 import {
     Sheet,
@@ -20,6 +19,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { QueryDetailContent } from '@/features/projects/query/query-detail';
 import { formatDurationLong, formatDurationMs } from '@/lib/datetime';
 import { SqlHighlight } from '@/lib/sql-highlight';
 import { formatCompactNumber } from '@/lib/utils';
@@ -35,18 +35,6 @@ const COLUMNS: { key: SortKey; label: string }[] = [
     { key: 'p95_ms', label: 'P95' },
 ];
 
-/**
- * The Queries page's main table: every SQL statement run in the window,
- * ranked by how often it ran by default, with its cumulative time and
- * duration percentiles -- this replaces the raw entries list for this one
- * category, since a stream of individual query spans is far less useful
- * here than "which statements run often or run slow" (see QueryStatsQuery).
- * Column order and shape mirror Laravel Nightwatch's own Queries table.
- *
- * A row click navigates to that statement's full detail page; the drawer
- * button fetches the same data as JSON (see ShowQueryController) and shows
- * it in a side panel instead, for a look without leaving the table.
- */
 export function QueriesTable({
     projectId,
     queries,

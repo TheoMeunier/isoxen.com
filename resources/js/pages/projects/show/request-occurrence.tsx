@@ -5,12 +5,6 @@ import { index, show } from '@/routes/projects';
 import type { RequestOccurrenceDetail } from '@/types/observability';
 import type { Project } from '@/types/project';
 
-/**
- * One request's full Info/Details breakdown as its own page -- reached by
- * clicking a specific row in a route's "Recent requests" list (see
- * RouteDetailContent's RequestRow), addressed by trace id + span id (see
- * ShowRequestOccurrenceController).
- */
 export default function ProjectsShowRequestOccurrence({
     project,
     request,

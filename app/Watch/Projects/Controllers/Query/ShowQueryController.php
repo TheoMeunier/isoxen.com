@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Watch\Projects\Controllers;
+namespace App\Watch\Projects\Controllers\Query;
 
 use App\Core\Controllers\Controller;
 use App\Watch\Ingestion\Queries\QueryOccurrencesQuery;
@@ -18,15 +18,10 @@ class ShowQueryController extends Controller
 {
     public function __construct(
         private readonly QueryOccurrencesQuery $queryOccurrencesQuery,
-    ) {}
-
-    /**
-     * Serves both the full detail page and the Queries table's drawer from
-     * one route: the drawer fetches this same URL with `Accept:
-     * application/json` (see QueriesTable) to preview a statement without
-     * navigating away, so there's no second endpoint to keep in sync with
-     * the page.
-     */
+    )
+    {
+    }
+    
     public function render(Request $request, Project $project, string $fingerprint): Response|JsonResponse
     {
         $this->authorize('view', $project);
@@ -41,7 +36,7 @@ class ShowQueryController extends Controller
 
         return Inertia::render('projects/show/query', [
             'project' => new ProjectResource($project),
-            'query'   => $query,
+            'query' => $query,
         ]);
     }
 }
