@@ -13,31 +13,6 @@ import {
 import { show as showTrace } from '@/routes/projects/traces';
 import type { RouteDetail, RouteOccurrence } from '@/types/observability';
 
-/**
- * A receipt-style row: label, a dotted rule filling the gap, then the
- * value -- same treatment as QueryDetailContent's DetailRow, so the two
- * detail panels read consistently even though they show different fields.
- */
-function DetailRow({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="flex min-w-0 items-baseline gap-2 text-sm">
-            <span className="shrink-0 text-xs tracking-wide text-muted-foreground uppercase">
-                {label}
-            </span>
-            <span className="h-px min-w-2 flex-1 translate-y-[-3px] border-b border-dotted border-sidebar-border/70 dark:border-sidebar-border" />
-            <span className="min-w-0 text-right font-medium break-words tabular-nums">
-                {value}
-            </span>
-        </div>
-    );
-}
-
-/**
- * The same receipt-row treatment as DetailRow, sized for the per-request
- * panel (see RequestActivityPanel) -- `text-sm`, same as DetailRow itself,
- * so a request's Info/Details read as comfortably as the route-level
- * Details rows just above them, not as a cramped afterthought.
- */
 function MiniRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex min-w-0 items-baseline gap-2 text-sm">
@@ -52,13 +27,6 @@ function MiniRow({ label, value }: { label: string; value: string }) {
     );
 }
 
-/**
- * A named group of MiniRows within RequestActivityPanel -- "Info" and
- * "Details" themselves, plus the "User" and "Notifications and Mail"
- * sub-groups Nightwatch breaks out from them. A real heading (not a small
- * muted label) is what separates this from feeling like one dense block of
- * rows: each group reads as its own section.
- */
 function ActivityGroup({
     title,
     children,
@@ -74,25 +42,14 @@ function ActivityGroup({
     );
 }
 
-/**
- * One request's full Info/Details breakdown -- everything Nightwatch's own
- * request page shows for one occurrence: sizes and status on the left
- * (grouped under "Info", with who made the request broken out under its
- * own "User" heading below), and what it triggered downstream (read back
- * from its trace's child spans, see RouteRequestActivityQuery) on the
- * right (grouped under "Details", with mail/notifications broken out under
- * "Notifications and Mail"). Server and deployment aren't shown here --
- * isoxen doesn't capture them today.
- *
- * Lives here (rather than the route it's most often shown next to) so both
- * the dedicated request page (ShowRequestOccurrenceController) and this
- * route's own "Latest request" block above can import the same panel.
- */
 export function RequestActivityPanel({
     occurrence,
     noTopBorder = false,
 }: {
-    occurrence: RouteDetail['occurrences'][number];
+    occurrence: RouteDetail['occurrences'][number] & {
+        route_name?: string | null;
+        action?: string | null;
+    };
     noTopBorder?: boolean;
 }) {
     const user = occurrence.user;
@@ -117,6 +74,15 @@ export function RequestActivityPanel({
         >
             <div className="space-y-6">
                 <ActivityGroup title="Info">
+                    {occurrence.route_name && (
+                        <MiniRow
+                            label="Route name"
+                            value={occurrence.route_name}
+                        />
+                    )}
+                    {occurrence.action && (
+                        <MiniRow label="Action" value={occurrence.action} />
+                    )}
                     <MiniRow
                         label="Status code"
                         value={
@@ -204,20 +170,6 @@ export function RequestActivityPanel({
     );
 }
 
-/**
- * A request's summary header (method, status, duration, URL, and links back
- * to its route/trace) plus its full RequestActivityPanel below -- the
- * self-contained card shown on the dedicated request page (see
- * ShowLatestRequestController/ShowRequestOccurrenceController) and reused
- * here for a route's own page to surface its most recent request without
- * requiring a click through to that separate page. `showRouteLink` is off
- * on a route's own page (already there, so the link back would be
- * redundant) and on wherever a request isn't already scoped to one route
- * (the two dedicated request pages). `bare` drops its own border/padding
- * for the route page, where it sits inside the route's own Details card
- * instead of getting one of its own (see RouteDetailContent) -- Nightwatch
- * keeps both halves in one card, not two stacked ones.
- */
 export function RequestOccurrenceCard({
     projectId,
     occurrence,
@@ -231,6 +183,7 @@ export function RequestOccurrenceCard({
         path?: string | null;
         fingerprint?: string | null;
         route_name?: string | null;
+        action?: string | null;
     };
     showRouteLink?: boolean;
     showTraceLink?: boolean;
@@ -417,6 +370,11 @@ export function RouteDetailContent({
         <div className="space-y-6">
             <section className="flex items-center gap-2 font-mono text-sm">
                 <Globe className="size-4 shrink-0 text-muted-foreground" />
+                <div className="flex flex-wrap items-center gap-1">
+                    {detail.methods.split('|').map((method) => (
+                        <MethodBadge key={method} method={method} />
+                    ))}
+                </div>
                 <span className="truncate" title={detail.path}>
                     {detail.path}
                 </span>
@@ -501,58 +459,20 @@ export function RouteDetailContent({
                 />
             </div>
 
-            <section className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
-                <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    Details
-                </p>
-                <div className="space-y-2">
-                    <DetailRow
-                        label="Route name"
-                        value={detail.route_name ?? '—'}
+            {detail.occurrences[0] && (
+                <section className="rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border">
+                    <RequestOccurrenceCard
+                        projectId={projectId}
+                        occurrence={{
+                            ...detail.occurrences[0],
+                            route_name: detail.route_name,
+                            action: detail.action,
+                        }}
+                        showHeader={false}
+                        bare
                     />
-                    <DetailRow label="Action" value={detail.action ?? '—'} />
-                    <DetailRow label="Methods" value={detail.methods} />
-                    <DetailRow
-                        label="Total"
-                        value={detail.total.toLocaleString()}
-                    />
-                    <DetailRow
-                        label="Avg duration"
-                        value={formatDurationMs(detail.avg_ms)}
-                    />
-                    <DetailRow
-                        label="P95"
-                        value={formatDurationMs(detail.p95_ms)}
-                    />
-                    <DetailRow
-                        label="First seen"
-                        value={
-                            detail.first_seen
-                                ? formatTime(detail.first_seen)
-                                : '—'
-                        }
-                    />
-                    <DetailRow
-                        label="Last seen"
-                        value={
-                            detail.last_seen
-                                ? formatTime(detail.last_seen)
-                                : '—'
-                        }
-                    />
-                </div>
-
-                {detail.occurrences[0] && (
-                    <div className="mt-4 border-t border-sidebar-border/70 pt-4 dark:border-sidebar-border">
-                        <RequestOccurrenceCard
-                            projectId={projectId}
-                            occurrence={detail.occurrences[0]}
-                            showHeader={false}
-                            bare
-                        />
-                    </div>
-                )}
-            </section>
+                </section>
+            )}
 
             <section className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                 <div className="flex items-center justify-between gap-4 border-b border-sidebar-border/70 px-4 py-3 dark:border-sidebar-border">
