@@ -38,7 +38,7 @@ test('the requests category is the project\'s default view', function () {
     $this->actingAs($user)
         ->get(route('projects.show', ['project' => $project, 'category' => 'requests']))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/show/activity')
+            ->component('projects/requests/index')
             ->where('activeCategory', 'requests')
             // Requests shows the Routes table (see RouteStatsTest) instead of individual
             // entries, so there's nothing to paginate here.
@@ -164,7 +164,7 @@ test('the information page renders the project without the activity pipeline', f
     $this->actingAs($user)
         ->get(route('projects.show', ['project' => $project, 'category' => 'information']))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/show/information')
+            ->component('projects/information')
             ->where('project.id', $project->id)
             ->missing('entries')
             ->missing('summary')
@@ -194,7 +194,7 @@ test('the users category reports who is currently online', function () {
     $this->actingAs($user)
         ->get(route('projects.show', ['project' => $project, 'category' => 'users']))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/show/users')
+            ->component('projects/users')
             ->has('onlineUsers', 1)
             ->where('onlineUsers.0.id', '42')
             ->where('onlineUsers.0.email', 'jane@example.com'));

@@ -34,7 +34,7 @@ class ShowQueryController extends Controller
             return response()->json($query);
         }
 
-        return Inertia::render('projects/show/query', [
+        return Inertia::render('projects/queries/show', [
             'project' => new ProjectResource($project),
             'query' => $query,
         ]);

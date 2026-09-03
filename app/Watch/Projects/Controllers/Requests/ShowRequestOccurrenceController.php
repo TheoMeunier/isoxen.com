@@ -28,7 +28,7 @@ class ShowRequestOccurrenceController extends Controller
 
         throw_if($request === null, NotFoundHttpException::class);
 
-        return Inertia::render('projects/show/request-occurrence', [
+        return Inertia::render('projects/requests/occurrence', [
             'project' => new ProjectResource($project),
             'request' => $request,
         ]);

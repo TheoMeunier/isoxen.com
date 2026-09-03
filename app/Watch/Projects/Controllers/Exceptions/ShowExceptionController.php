@@ -29,7 +29,7 @@ class ShowExceptionController extends Controller
 
         throw_if($exception === null, NotFoundHttpException::class);
 
-        return Inertia::render('projects/show/exception', [
+        return Inertia::render('projects/exceptions/show', [
             'project' => new ProjectResource($project),
             'fingerprint' => $fingerprint,
             'exception' => $exception,

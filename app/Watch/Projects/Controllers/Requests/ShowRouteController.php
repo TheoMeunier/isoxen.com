@@ -34,7 +34,7 @@ class ShowRouteController extends Controller
             return response()->json($route);
         }
 
-        return Inertia::render('projects/show/route', [
+        return Inertia::render('projects/requests/route', [
             'project' => new ProjectResource($project),
             'route' => $route,
         ]);

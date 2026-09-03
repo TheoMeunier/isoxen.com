@@ -99,7 +99,7 @@ test('an owner can view their project, including its ingestion token', function 
         ->assertOk()
         ->assertInertia(
             fn (Assert $page) => $page
-                ->component('projects/show/activity')
+                ->component('projects/requests/index')
                 ->where('project.id', $project->id)
                 ->where('project.token', $project->token)
         );

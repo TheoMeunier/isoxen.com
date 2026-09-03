@@ -98,7 +98,7 @@ test('clicking through to an exception shows its full detail', function () {
     $this->actingAs($user)
         ->get(route('projects.exceptions.show', ['project' => $project, 'fingerprint' => $fingerprint]))
         ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/show/exception')
+            ->component('projects/exceptions/show')
             ->where('exception.type', 'RuntimeException')
             ->where('exception.occurrences_30d', 2)
             ->where('exception.occurrences_24h', 1));

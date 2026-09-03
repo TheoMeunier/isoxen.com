@@ -44,7 +44,7 @@ test('an owner can view their project overview', function () {
         ->get(route('projects.show', ['project' => $project, 'category' => 'overview']))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('projects/show/overview')
+            ->component('projects/overview')
             ->where('project.id', $project->id)
             ->has('categories')
             ->has('onlineUsers'));
