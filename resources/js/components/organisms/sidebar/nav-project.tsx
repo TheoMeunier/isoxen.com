@@ -136,7 +136,7 @@ function CategoryGroup({
     counts,
 }: {
     label: string;
-    group: 'activity' | 'monitoring';
+    group: 'activity' | 'messaging' | 'monitoring';
     categories: ObservabilityCategories;
     project: CurrentProject;
     active: string;
@@ -254,6 +254,15 @@ export function NavProject({
             <CategoryGroup
                 label="Activity"
                 group="activity"
+                categories={categories}
+                project={project}
+                active={active}
+                counts={counts}
+            />
+
+            <CategoryGroup
+                label="Messaging"
+                group="messaging"
                 categories={categories}
                 project={project}
                 active={active}

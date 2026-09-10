@@ -66,6 +66,37 @@ export function InformationPanel({ project }: { project: Project }) {
                                             <InputError message={errors.name} />
                                         </div>
 
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="alert_error_rate_threshold">
+                                                Alert above % of 5XX errors
+                                            </Label>
+
+                                            <Input
+                                                id="alert_error_rate_threshold"
+                                                name="alert_error_rate_threshold"
+                                                type="number"
+                                                min={1}
+                                                max={100}
+                                                placeholder="Leave empty to disable"
+                                                defaultValue={
+                                                    project.alertErrorRateThreshold ??
+                                                    ''
+                                                }
+                                            />
+
+                                            <p className="text-sm text-muted-foreground">
+                                                Emails you when more than this
+                                                share of the last hour's
+                                                requests fail.
+                                            </p>
+
+                                            <InputError
+                                                message={
+                                                    errors.alert_error_rate_threshold
+                                                }
+                                            />
+                                        </div>
+
                                         <DialogFooter className="gap-2">
                                             <DialogClose asChild>
                                                 <Button variant="secondary">

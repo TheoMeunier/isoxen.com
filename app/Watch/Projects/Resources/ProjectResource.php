@@ -21,11 +21,12 @@ class ProjectResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'        => $this->id,
-            'name'      => $this->name,
-            'slug'      => $this->slug,
-            'token'     => $request->routeIs('projects.show') ? $this->token : null,
-            'createdAt' => $this->created_at,
+            'id'                      => $this->id,
+            'name'                    => $this->name,
+            'slug'                    => $this->slug,
+            'token'                   => $request->routeIs('projects.show') ? $this->token : null,
+            'alertErrorRateThreshold' => $this->alert_error_rate_threshold,
+            'createdAt'               => $this->created_at,
         ];
     }
 }

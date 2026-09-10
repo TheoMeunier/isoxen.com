@@ -23,15 +23,25 @@ use Illuminate\Support\Str;
  * @property string $name
  * @property string $slug
  * @property string $token
+ * @property int|null $alert_error_rate_threshold
+ * @property Carbon|null $alert_notified_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $user
  */
-#[Fillable(['name'])]
+#[Fillable(['name', 'alert_error_rate_threshold'])]
 class Project extends Model
 {
     /** @use HasFactory<ProjectFactory> */
     use HasFactory;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return ['alert_notified_at' => 'datetime'];
+    }
 
     protected static function newFactory(): ProjectFactory
     {

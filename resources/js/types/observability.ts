@@ -319,7 +319,7 @@ export type CurrentProject = {
 export type CategoryHealth = {
     slug: Exclude<ObservabilityCategory, 'users'>;
     label: string;
-    group: 'activity' | 'monitoring';
+    group: 'activity' | 'messaging' | 'monitoring';
     total: number;
     errors: number;
 };
@@ -344,7 +344,7 @@ export type ObservabilityCategory =
  * list instead of keeping its own hardcoded copy.
  */
 export type ObservabilityCategoryDefinition = {
-    group: 'activity' | 'monitoring';
+    group: 'activity' | 'messaging' | 'monitoring';
     label: string;
     source: 'span' | 'logs' | 'metrics';
     type: string | null;

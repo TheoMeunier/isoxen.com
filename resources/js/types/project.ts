@@ -3,5 +3,6 @@ export type Project = {
     name: string;
     slug: string;
     token: string | null;
+    alertErrorRateThreshold: number | null;
     createdAt: string | null;
 };
